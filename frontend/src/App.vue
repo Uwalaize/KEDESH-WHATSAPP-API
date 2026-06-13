@@ -229,7 +229,7 @@ import axios from 'axios';
 // 🔥 HAPA TUNAVUTA DASHBOARD YAKO NZURI TOKA COMPONENTS FOLDER!
 import Dashboard from './components/Dashboard.vue';
 
-const API_URL = 'http://localhost:3000/api/auth';
+const API_URL = 'https://kedesh-whatsapp-api.onrender.com/api/auth';
 
 const countries = [
   { code: '255', flag: '🇹🇿', name: 'Tanzania' }, { code: '254', flag: '🇰🇪', name: 'Kenya' },

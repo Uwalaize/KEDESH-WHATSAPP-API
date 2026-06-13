@@ -378,7 +378,7 @@ const fetchDashboardStats = async () => {
     try {
         const token = localStorage.getItem('msamba_token');
         if(!token) return;
-        const res = await axios.get('http://localhost:3000/api/dashboard/stats', { headers: { Authorization: `Bearer ${token}` } });
+        const res = await axios.get('https://kedesh-whatsapp-api.onrender.com/api/dashboard/stats', { headers: { Authorization: `Bearer ${token}` } });
         if(res.data.success) {
             totalSent.value = res.data.stats.totalSent || 0;
             totalDelivered.value = res.data.stats.totalDelivered || 0;
@@ -403,7 +403,7 @@ const saveSettings = async () => {
     isSavingSettings.value = true; settingsMessage.value = { type: '', text: '' };
     try {
         const token = localStorage.getItem('msamba_token');
-        const res = await axios.post('http://localhost:3000/api/settings/update', 
+        const res = await axios.post('https://kedesh-whatsapp-api.onrender.com/api/settings/update', 
             { whatsappPhoneId: phoneIdInput.value }, 
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -467,7 +467,7 @@ const sendBulkSMS = async () => {
    isSending.value = true; sendReport.value = null;
    try {
       const token = localStorage.getItem('msamba_token');
-      const res = await axios.post('http://localhost:3000/api/send-bulk', { 
+      const res = await axios.post('https://kedesh-whatsapp-api.onrender.com/api/send-bulk', { 
           contacts: parsedContacts.value, 
           campaignName: campaignName.value, 
           templateName: templateNameInput.value.trim(),
@@ -508,7 +508,7 @@ const fetchContacts = async () => {
   try {
     const token = localStorage.getItem('msamba_token');
     if(!token) return;
-    const res = await axios.get('http://localhost:3000/api/chat/contacts', { headers: { Authorization: `Bearer ${token}` } });
+    const res = await axios.get('https://kedesh-whatsapp-api.onrender.com/api/chat/contacts', { headers: { Authorization: `Bearer ${token}` } });
     if(res.data.success) { chatContacts.value = res.data.contacts.map(c => ({ ...c, time: formatTime(c.time) })); }
   } catch(e) {}
 };
@@ -516,7 +516,7 @@ const fetchContacts = async () => {
 const fetchMessages = async (contactId) => {
   try {
     const token = localStorage.getItem('msamba_token');
-    const res = await axios.get(`http://localhost:3000/api/chat/messages/${contactId}`, { headers: { Authorization: `Bearer ${token}` } });
+    const res = await axios.get(`https://kedesh-whatsapp-api.onrender.com/api/chat/messages/${contactId}`, { headers: { Authorization: `Bearer ${token}` } });
     if(res.data.success) {
       const isAtBottom = chatScroll.value ? (chatScroll.value.scrollHeight - chatScroll.value.scrollTop <= chatScroll.value.clientHeight + 50) : true;
       const isFirstLoad = chatMessages.value.length === 0;
@@ -546,7 +546,7 @@ const sendLiveMessage = async () => {
 
   try {
     const token = localStorage.getItem('msamba_token');
-    const res = await axios.post('http://localhost:3000/api/chat/send', {
+    const res = await axios.post('https://kedesh-whatsapp-api.onrender.com/api/chat/send', {
       contactId: activeChat.value, phone: currentActiveContact.value.phone, messageText: textToSend
     }, { headers: { Authorization: `Bearer ${token}` } });
 
