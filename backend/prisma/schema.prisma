@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================================================
+// 1. JEDWALI LA WAFANYABIASHARA (SaaS Users / Wamiliki)
+// ==================================================
+model Business {
+  id               String     @id @default(uuid())
+  businessName     String
+  fullName         String     // Imeongezwa kuendana na Fomu ya Usajili
+  phone            String     @unique // Imebadilishwa kutoka 'email' ili ku-login kwa namba
+  password         String
+  
+  // Taarifa za WhatsApp API kutoka Meta (Mteja ataweka akiwa kwenye Dashboard)
+  whatsappPhoneId  String?    
+  metaAccessToken  String?    
+  walletBalance    Float      @default(0.0) // Salio la kutuma Bulk SMS
+  
+  contacts         Contact[]
+  messages         Message[]
+  campaigns        Campaign[]
+  
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+}
+
+// ==================================================
+// 2. JEDWALI LA WATEJA WAO (Contacts / Wanaopokea SMS)
+// ==================================================
+model Contact {
+  id          String    @id @default(uuid())
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  name        String?
+  phoneNumber String    // Mfano: 255712345678 (Bila + )
+  
+  messages    Message[]
+  
+  createdAt   DateTime  @default(now())
+
+  // Tunazuia namba moja isijirudie kwa mfanyabiashara yule yule
+  @@unique([businessId, phoneNumber]) 
+}
+
+// ==================================================
+// 3. JEDWALI LA MESEJI (Kwa ajili ya Live Chat & History)
+// ==================================================
+model Message {
+  id          String    @id @default(uuid())
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  contactId   String
+  contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  metaMsgId   String?   @unique // ID inatoka WhatsApp kujua kama SMS imefika
+  direction   String    // 'INBOUND' (Mteja katuma) au 'OUTBOUND' (Biashara imetuma)
+  content     String    // Ujumbe wenyewe
+  status      String    @default("SENT") // SENT, DELIVERED, READ, FAILED
+  
+  createdAt   DateTime  @default(now())
+}
+
+// ==================================================
+// 4. JEDWALI LA KAMPENI ZA BULK SMS
+// ==================================================
+model Campaign {
+  id            String   @id @default(uuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  campaignName  String   // Mfano: "Ofa ya Sabasaba"
+  templateName  String   // Jina la template ya Meta API
+  status        String   @default("PENDING") // PENDING, PROCESSING, COMPLETED
+  totalContacts Int      @default(0)
+  
+  createdAt     DateTime @default(now())
+}
