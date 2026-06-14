@@ -18,7 +18,8 @@ const prisma = new PrismaClient();
 const BULK_SMS_COST = 84;   // Mteja anakatwa TZS 84 kwa kila Bulk SMS (Template)
 const LIVE_CHAT_COST = 30;  // Mteja anakatwa TZS 30 kwa Live Chat (Hii ni Pure Profit kwako 100%)
 
-const { META_VERIFY_TOKEN, META_ACCESS_TOKEN, META_PHONE_ID } = process.env;
+// Tumeondoa META_PHONE_ID hapa kwa sababu kila mteja anatumia yake toka Database (SaaS Multi-Tenant)
+const { META_VERIFY_TOKEN, META_ACCESS_TOKEN } = process.env;
 const JWT_SECRET = process.env.JWT_SECRET || "KEDESH_LIMITED_PREMIUM_SECRET_2026"; 
 
 if (!META_VERIFY_TOKEN || !META_ACCESS_TOKEN) {
@@ -138,10 +139,29 @@ app.post('/webhook', async (req, res) => {
                     if (!value) continue;
 
                     const incomingPhoneId = value.metadata?.phone_number_id;
+                    
+                    // ========================================================
+                    // 🚨 MTAMBO WA KIJASUSI WA KUKAMATA KOSA LA WEBHOOK LIVE 🚨
+                    // ========================================================
+                    console.log(`\n======================================================`);
+                    console.log(`🚨 [WEBHOOK INAINGIA] -> Mzigo umetoka Meta!`);
+                    console.log(`📞 [PHONE ID YA META NI]: "${incomingPhoneId}"`);
+
                     let business = null;
 
-                    if (incomingPhoneId) business = await prisma.business.findFirst({ where: { whatsappPhoneId: incomingPhoneId } });
-                    if (!business) continue;
+                    if (incomingPhoneId) {
+                        business = await prisma.business.findFirst({ where: { whatsappPhoneId: incomingPhoneId } });
+                    }
+                    
+                    if (!business) {
+                        console.log(`❌ [KOSA KUBWA]: Mfumo umeshindwa kuipata ofisi kwenye Database yenye Phone ID: "${incomingPhoneId}". MZIGO UMETUPWA KAPUNI!`);
+                        console.log(`======================================================\n`);
+                        continue;
+                    } else {
+                        console.log(`✅ [OFISI IMEPATIKANA]: Mzigo unapelekwa kwa: ${business.businessName}`);
+                        console.log(`======================================================\n`);
+                    }
+                    // ========================================================
 
                     // 🔥 A) KUKAMATA TIKI ZA WHATSAPP (READ RECEIPTS)
                     if (value.statuses && value.statuses.length > 0) {
@@ -221,8 +241,9 @@ app.post('/api/chat/send', verifyToken, async (req, res) => {
         const { contactId, phone, messageText } = req.body;
         const business = await prisma.business.findUnique({ where: { id: req.user.businessId } });
 
-        const phoneIdToUse = business.whatsappPhoneId || META_PHONE_ID;
-        if (!phoneIdToUse) return res.status(403).json({ success: false, error: "Hujaunganishwa Phone ID." });
+        // SASA INATUMIA PHONE ID YA DATABASE TU! (SaaS Architecture)
+        const phoneIdToUse = business.whatsappPhoneId;
+        if (!phoneIdToUse) return res.status(403).json({ success: false, error: "Hujaunganishwa Phone ID yako. Tafadhali iweke kwenye mipangilio kwanza." });
         
         // ZUIA KAMA HAKUNA SALIO LA KUTOSHA (TZS 30)
         if (business.walletBalance < LIVE_CHAT_COST) {
@@ -274,8 +295,10 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
         if (!contacts || contacts.length === 0) return res.status(400).json({ success: false, error: "Namba hazipo." });
 
         const business = await prisma.business.findUnique({ where: { id: req.user.businessId } });
-        const phoneIdToUse = business.whatsappPhoneId || META_PHONE_ID;
-        if (!phoneIdToUse) return res.status(403).json({ success: false, error: "Akaunti yako haijaunganishwa." });
+        
+        // SASA INATUMIA PHONE ID YA DATABASE TU! (SaaS Architecture)
+        const phoneIdToUse = business.whatsappPhoneId;
+        if (!phoneIdToUse) return res.status(403).json({ success: false, error: "Akaunti yako haijaunganishwa Phone ID." });
         
         const totalEstimatedCost = contacts.length * BULK_SMS_COST;
         if (business.walletBalance < totalEstimatedCost) return res.status(402).json({ success: false, error: `Salio halitoshi. Unahitaji TZS ${totalEstimatedCost}.` });
@@ -350,8 +373,8 @@ app.listen(PORT, () => {
     console.log(` 🚀 KEDESH SAAS BACKEND IMESIMAMA IMARA NA INASUBIRI KAZI `);
     console.log(`=============================================================`);
     console.log(` 🟢 PORT       : ${PORT}`);
-    console.log(` 💰 BULK SMS   : TZS ${BULK_SMS_COST} kwa Ujumbe Uliofanikiwa`);
-    console.log(` 💬 LIVE CHAT  : TZS ${LIVE_CHAT_COST} kwa Ujumbe (Faida 100%)`);
-    console.log(` 🔒 ULINZI     : Usalama wa Masaa 24 & Phone ID Imefungwa`);
+    console.log(` 🏢 MUUNDO     : Multi-Tenant SaaS (DB Phone IDs)`);
+    console.log(` 💰 BULK SMS   : TZS ${BULK_SMS_COST} kwa Ujumbe`);
+    console.log(` 💬 LIVE CHAT  : TZS ${LIVE_CHAT_COST} kwa Ujumbe`);
     console.log(`=============================================================\n`);
 });
