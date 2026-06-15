@@ -47,20 +47,84 @@
             </div>
           </div>
           
-          <div class="brand-bottom">
+          <div class="brand-bottom desktop-only">
             <p>&copy; 2026 KEDESH LIMITED. Haki Zote Zimehifadhiwa.</p>
             <div class="links">
-              <a href="#">Sera ya Faragha</a> <span class="dot">•</span> <a href="#">Vigezo & Masharti</a>
+              <a href="?privacy=true" @click.prevent="openPrivacy">Sera ya Faragha</a> <span class="dot">•</span> <a href="#">Vigezo & Masharti</a>
             </div>
           </div>
         </div>
       </div>
 
       <div class="form-side">
-        <div class="form-wrapper">
+        <div class="form-wrapper" :class="{ 'wide-wrapper': showPrivacy }">
           <transition name="fade-slide" mode="out-in">
             
-            <div v-if="isLogin" key="login" class="glass-card">
+            <div v-if="showPrivacy" key="privacy" class="glass-card privacy-card">
+              <div class="privacy-header">
+                <div class="header-icon">🛡️</div>
+                <h2>SERA YA FARAGHA (PRIVACY POLICY)</h2>
+                <div class="privacy-meta">
+                  <span class="badge">Kedesh Bulk SMS</span>
+                  <span class="dot hide-mobile">•</span>
+                  <span class="date">Imesasishwa: 10 Juni 2026</span>
+                </div>
+              </div>
+              
+              <div class="privacy-content custom-scrollbar">
+                <div class="p-section">
+                  <h3>1. Utangulizi</h3>
+                  <p>Kedesh Limited ("sisi", "yetu") inamiliki na kuendesha mfumo wa Kedesh Bulk SMS. Tunathamini faragha yako na tumejitolea kulinda taarifa zako binafsi na za kibiashara. Sera hii inaeleza jinsi tunavyokusanya, kutumia, na kulinda data zako unapotumia mfumo wetu kupitia Facebook Login na WhatsApp Business API.</p>
+                </div>
+
+                <div class="p-section">
+                  <h3>2. Taarifa Tunazokusanya</h3>
+                  <p>Tunapokuunganisha na mfumo wetu, tunakusanya taarifa zifuatazo kwa idhini yako:</p>
+                  <ul>
+                    <li><strong>Taarifa za Profaili:</strong> Jina lako na barua pepe (Email) kutoka kwenye akaunti yako ya Facebook/Meta.</li>
+                    <li><strong>Taarifa za Utendaji:</strong> Access Tokens, na Phone Number ID zinazotuwezesha kuunganisha mfumo wetu na akaunti yako ya WhatsApp Business.</li>
+                    <li><strong>Data za Wateja Wako:</strong> Namba za simu unazoziweka kwenye mfumo kwa ajili ya kutuma meseji (Bulk SMS).</li>
+                  </ul>
+                </div>
+
+                <div class="p-section">
+                  <h3>3. Jinsi Tunavyotumia Taarifa Zako</h3>
+                  <p>Taarifa tunazokusanya zinatumika kwa malengo mahususi yafuatayo:</p>
+                  <ul>
+                    <li>Kuthibitisha utambulisho wako na kulinda akaunti yako.</li>
+                    <li>Kuwezesha utumaji wa ujumbe kwa wateja wako kupitia API rasmi ya Meta.</li>
+                    <li>Kukupa ripoti na takwimu za uwasilishaji wa meseji zako.</li>
+                  </ul>
+                </div>
+
+                <div class="p-section">
+                  <h3>4. Ushirikiano na Wengine (Data Sharing)</h3>
+                  <p>Kedesh Limited haiuzi, haigawi, wala haishiriki taarifa zako na makampuni mengine ya kibiashara. Taarifa zako zinashirikiwa tu na Meta Platforms, Inc. kwa lengo moja tu la kufanikisha utumaji wa ujumbe (WhatsApp API). Tunazingatia sheria zote za ulinzi wa data.</p>
+                </div>
+
+                <div class="p-section">
+                  <h3>5. Kufuta Taarifa Zako (Data Deletion Policy)</h3>
+                  <p>Wewe ndiye mmiliki wa data zako. Ikiwa unataka kusitisha matumizi ya mfumo wetu na kufuta taarifa zako zote (pamoja na Access Tokens na orodha ya wateja wako) kutoka kwenye kanzidata (database) yetu, una haki ya kufanya hivyo. Tafadhali wasiliana nasi kupitia barua pepe yetu, na tutafuta taarifa zako zote ndani ya masaa 24.</p>
+                </div>
+
+                <div class="p-section">
+                  <h3>6. Mawasiliano</h3>
+                  <p>Kama una swali lolote, changamoto, au unahitaji msaada kuhusu Sera hii ya Faragha au ulinzi wa data zako, tafadhali wasiliana nasi kupitia:</p>
+                  <div class="contact-box">
+                    <p>📧 Barua pepe: <strong>info@kedeshlimited.com</strong></p>
+                    <p>🌐 Tovuti: <strong>www.kedeshlimited.com</strong></p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="action-buttons mt-4">
+                <button @click="closePrivacy" class="btn-primary w-100">
+                  &larr; Nimeelewa, Rudi Kuingia
+                </button>
+              </div>
+            </div>
+
+            <div v-else-if="isLogin" key="login" class="glass-card">
               <div class="form-header">
                 <div class="header-icon">👋</div>
                 <h2>Karibu KEDESH SaaS</h2>
@@ -110,6 +174,10 @@
               <div class="switch-mode">
                 <p>Huna akaunti ya biashara?</p>
                 <button @click="toggleMode" class="btn-text-outline">Fungua Akaunti Yako Hapa</button>
+                
+                <div class="mobile-privacy-link mt-4">
+                  <a href="?privacy=true" @click.prevent="openPrivacy" class="m-link">🛡️ Soma Sera ya Faragha (Privacy Policy)</a>
+                </div>
               </div>
             </div>
 
@@ -193,7 +261,7 @@
                         <div class="s-row"><span>Namba:</span> <strong>+{{ regForm.countryCode }} {{ regForm.phone }}</strong></div>
                       </div>
                     </div>
-                    <p class="terms-text">Kwa kubofya "Kamilisha Usajili", unakubaliana na Vigezo na Masharti yetu.</p>
+                    <p class="terms-text mt-3">Kwa kubofya "Kamilisha Usajili", unakubaliana na <a href="?privacy=true" @click.prevent="openPrivacy" style="color: #4f46e5; text-decoration: underline; font-weight: bold;">Sera ya Faragha</a> yetu.</p>
                   </div>
 
                 </transition>
@@ -211,6 +279,10 @@
               <div class="switch-mode" v-if="step === 1">
                 <p>Umeshasajiliwa tayari?</p>
                 <button @click="toggleMode" class="btn-text">Ingia Kwenye Mfumo &rarr;</button>
+                
+                <div class="mobile-privacy-link mt-4">
+                  <a href="?privacy=true" @click.prevent="openPrivacy" class="m-link">🛡️ Soma Sera ya Faragha (Privacy Policy)</a>
+                </div>
               </div>
             </div>
 
@@ -223,7 +295,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import axios from 'axios';
 
 // 🔥 HAPA TUNAVUTA DASHBOARD YAKO NZURI TOKA COMPONENTS FOLDER!
@@ -256,12 +328,42 @@ const justRegistered = ref(false);
 const passError = ref(false);
 const authError = ref('');
 
+// 🛡️ STATE YA PRIVACY POLICY
+const showPrivacy = ref(false);
+
+// 🔥 MTAMBO WA KUSOMA URL KWA AJILI YA META REVIEWERS 🔥
+onMounted(() => {
+  const urlParams = new URLSearchParams(window.location.search);
+  // Kama Meta wakitumia link yenye ?privacy=true au #privacy, tunafungua ukurasa wa sera moja kwa moja
+  if (urlParams.get('privacy') === 'true' || window.location.hash.includes('privacy')) {
+    showPrivacy.value = true;
+  }
+});
+
+// Kufungua Privacy na ku-update URL kiasili (bila kurefresh kioo)
+const openPrivacy = () => {
+  showPrivacy.value = true;
+  window.history.pushState({}, '', '?privacy=true');
+};
+
+// Kufunga Privacy na kusafisha URL irudi kawaida
+const closePrivacy = () => {
+  showPrivacy.value = false;
+  window.history.pushState({}, '', window.location.pathname);
+};
+
 const loginForm = reactive({ countryCode: '255', phone: '', password: '' });
 const regForm = reactive({ businessName: '', fullName: '', countryCode: '255', phone: '', password: '', confirmPassword: '' });
 
 const formatPhone = (code, phone) => `${code}${phone.replace(/^0+/, '')}`.replace(/\s+/g, '');
 
-const toggleMode = () => { isLogin.value = !isLogin.value; step.value = 1; authError.value = ''; justRegistered.value = false; };
+const toggleMode = () => { 
+  isLogin.value = !isLogin.value; 
+  step.value = 1; 
+  authError.value = ''; 
+  justRegistered.value = false; 
+  closePrivacy(); // Funga sera kama ipo wazi
+};
 const prevStep = () => { if (step.value > 1) step.value--; };
 const nextStep = () => {
   authError.value = '';
@@ -278,7 +380,7 @@ const completeRegistration = async () => {
       businessName: regForm.businessName, fullName: regForm.fullName,
       phone: fullPhone, password: regForm.password
     });
-    justRegistered.value = true; isLogin.value = true; step.value = 1;
+    justRegistered.value = true; isLogin.value = true; step.value = 1; closePrivacy();
     regForm.phone = ''; regForm.password = ''; regForm.confirmPassword = '';
   } catch (error) {
     authError.value = error.response?.data?.error || "Kosa la kimtandao limejitokeza.";
@@ -325,52 +427,48 @@ const logout = () => {
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
 
-/* ==========================================================================
-   1. CSS YA PAZIA LA MPITO (REDIRECT SCREEN)
-========================================================================== */
-.redirect-screen { 
-  display: flex; height: 100vh; width: 100vw; 
-  background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); 
-  justify-content: center; align-items: center; color: white;
-}
-.redirect-content { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 450px;}
-.success-check {
-  font-size: 5rem; margin-bottom: 20px;
-  animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
+/* PAZIA LA MPITO */
+.redirect-screen { display: flex; height: 100vh; width: 100vw; background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); justify-content: center; align-items: center; color: white;}
+.redirect-content { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 450px; padding: 20px;}
+.success-check { font-size: 5rem; margin-bottom: 20px; animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;}
 @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-
 .redirect-title { font-size: 2.2rem; font-weight: 800; color: #f8fafc; margin-bottom: 10px; }
 .redirect-text { color: #94a3b8; font-size: 1.1rem; margin-bottom: 35px; }
-
 .loader-bar-container { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin: 0 auto 20px auto; overflow: hidden; }
 .loader-progress { height: 100%; background: linear-gradient(90deg, #4f46e5, #10b981); width: 0%; border-radius: 10px; animation: loadBar 2.5s ease-in-out forwards; }
 @keyframes loadBar { 0% { width: 0%; } 100% { width: 100%; } }
+.secure-text { display: flex; align-items: center; gap: 8px; color: #10b981; font-size: 0.9rem; font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 10px 20px; border-radius: 30px; border: 1px solid rgba(16, 185, 129, 0.2); }
 
-.secure-text { 
-  display: flex; align-items: center; gap: 8px; color: #10b981; font-size: 0.9rem; font-weight: 700; 
-  background: rgba(16, 185, 129, 0.1); padding: 10px 20px; border-radius: 30px; border: 1px solid rgba(16, 185, 129, 0.2); 
-}
-
-/* Master Page Transition Animation */
 .page-fade-enter-active, .page-fade-leave-active { transition: opacity 0.5s ease, transform 0.5s ease; }
 .page-fade-enter-from { opacity: 0; transform: scale(0.98); }
 .page-fade-leave-to { opacity: 0; transform: scale(1.02); }
 
-
 /* ==========================================================================
-   2. CSS YA LOGIN NA REGISTER (YENYE MABADILIKO YA UWIANO WA MAKASHA)
+   SULUHISHO LA RESPONSIVENESS KWA SIMU NA TABLET
 ========================================================================== */
-.auth-container { display: flex; height: 100vh; width: 100vw; background: #f0f4f8; overflow: hidden; }
+.auth-container { 
+  display: flex; 
+  /* TUMEONDOA overflow: hidden NA KUWEKA min-height: 100vh ILI IRUHUSU SCROLLING KWA SIMU */
+  min-height: 100vh; 
+  width: 100vw; 
+  background: #f0f4f8; 
+  overflow-x: hidden;
+}
 
-/* 🌟 BRAND SIDE: NIMEIPUNGUZA IWE SAWA NA FORM SIDE (flex: 1) 🌟 */
-.brand-side { flex: 1; background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); color: white; padding: 4rem; position: relative; display: flex; flex-direction: column; overflow: hidden; justify-content: center;}
+.brand-side { 
+  flex: 1; background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); 
+  color: white; padding: 4rem; position: relative; display: flex; 
+  flex-direction: column; justify-content: center; overflow: hidden;
+}
 
-/* 🌟 FORM SIDE: NIMEONGEZA NAFASI YAKE IWE KUBWA (flex: 1.3) 🌟 */
-.form-side { flex: 1.3; display: flex; align-items: center; justify-content: center; background: #ffffff; padding: 2rem; position: relative; }
+.form-side { 
+  flex: 1.3; display: flex; align-items: center; justify-content: center; 
+  background: #ffffff; padding: 2rem; position: relative;
+}
 
-/* 🌟 UPANA WA KADI UMEONGEZWA KUTOKA 440px HADI 480px 🌟 */
-.form-wrapper { width: 100%; max-width: 480px; } 
+/* KADI INAPANUKA KAMA NI PRIVACY POLICY LAKINI INAFIT VIZURI */
+.form-wrapper { width: 100%; max-width: 440px; transition: max-width 0.4s ease; margin: 0 auto; } 
+.wide-wrapper { max-width: 700px; } 
 
 .animated-glow { position: absolute; border-radius: 50%; filter: blur(100px); z-index: 1; opacity: 0.5; animation: float 10s ease-in-out infinite alternate; }
 .glow-1 { width: 450px; height: 450px; background: #4f46e5; top: -100px; left: -100px; }
@@ -378,7 +476,7 @@ const logout = () => {
 .glow-3 { width: 250px; height: 250px; background: #ec4899; top: 40%; left: 30%; opacity: 0.2; animation-delay: 5s;}
 @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(30px, 30px) scale(1.1); } }
 
-.brand-content { z-index: 10; display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
+.brand-content { z-index: 10; display: flex; flex-direction: column; justify-content: space-between; height: 100%; min-height: 500px;}
 .brand-top .logo { height: 60px; object-fit: contain; margin-top: 1rem;}
 .premium-badge { display: inline-block; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); padding: 8px 16px; border-radius: 30px; font-size: 0.85rem; font-weight: 700; color: #e0e7ff; backdrop-filter: blur(10px); }
 .hero-title { font-size: 3.2rem; font-weight: 800; line-height: 1.1; margin-top: 1rem; margin-bottom: 1.5rem; letter-spacing: -1px;}
@@ -387,34 +485,56 @@ const logout = () => {
 .f-item { display: flex; align-items: center; gap: 15px; font-size: 1.1rem; color: #f8fafc; font-weight: 500;}
 .f-icon { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 12px; font-size: 1.2rem; }
 .brand-bottom { display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; color: #64748b; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 20px;}
-.links a { color: #94a3b8; text-decoration: none; transition: 0.3s; }
-.links a:hover { color: white; }
+.links a { color: #94a3b8; text-decoration: none; transition: 0.3s; font-weight: 600;}
+.links a:hover { color: white; text-decoration: underline;}
 .dot { margin: 0 10px; opacity: 0.5;}
 
-.glass-card { background: white; padding: 3.5rem 3rem; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08); border: 1px solid rgba(226, 232, 240, 0.8); }
+.glass-card { background: white; padding: 3rem 2.5rem; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08); border: 1px solid rgba(226, 232, 240, 0.8); width: 100%;}
 .form-header { text-align: center; margin-bottom: 2.5rem; }
 .header-icon { font-size: 3.5rem; margin-bottom: 10px; display: inline-block; animation: wave 2.5s infinite; transform-origin: 70% 70%; }
 @keyframes wave { 0% { transform: rotate(0deg); } 10% { transform: rotate(14deg); } 20% { transform: rotate(-8deg); } 30% { transform: rotate(14deg); } 40% { transform: rotate(-4deg); } 50% { transform: rotate(10deg); } 60%, 100% { transform: rotate(0deg); } }
 .form-header h2 { font-size: 1.8rem; font-weight: 800; color: #0f172a; margin-bottom: 5px; }
 .form-header p { color: #64748b; font-size: 0.95rem; }
 
+/* ==========================================================================
+   📜 KADI YA SERA YA FARAGHA (PRIVACY POLICY) 📜
+========================================================================== */
+.privacy-card { padding: 2.5rem 3rem !important; display: flex; flex-direction: column; max-height: 85vh; }
+.privacy-header { border-bottom: 1px solid #e2e8f0; padding-bottom: 1.5rem; margin-bottom: 1.5rem; text-align: center; flex-shrink: 0;}
+.privacy-header h2 { font-size: 1.6rem; color: #0f172a; font-weight: 800; margin: 10px 0 5px 0;}
+.privacy-meta { display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 0.85rem; color: #64748b; flex-wrap: wrap;}
+.badge { background: #e0e7ff; color: #4f46e5; padding: 4px 10px; border-radius: 20px; font-weight: 700;}
+.privacy-content { overflow-y: auto; padding-right: 15px; text-align: left; }
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px;}
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.p-section { margin-bottom: 1.8rem; }
+.p-section h3 { font-size: 1.1rem; color: #0f172a; margin-bottom: 10px; font-weight: 800; }
+.p-section p { font-size: 0.95rem; color: #475569; line-height: 1.7; margin-bottom: 10px;}
+.p-section ul { padding-left: 20px; color: #475569; font-size: 0.95rem; line-height: 1.7;}
+.p-section li { margin-bottom: 8px; }
+.contact-box { background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px dashed #cbd5e1; margin-top: 10px;}
+.w-100 { width: 100%; justify-content: center; }
+
+/* KODI ZA FORMU ZA KAWAIDA */
 .alert-box { padding: 14px 16px; border-radius: 12px; margin-bottom: 20px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
 .success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
 .error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
 .info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
 
 .input-group { margin-bottom: 1.5rem; }
-.input-group label { display: block; font-size: 0.9rem; font-weight: 700; color: #334155; margin-bottom: 8px; }
+.input-group label { display: block; font-size: 0.9rem; font-weight: 700; color: #334155; margin-bottom: 8px; text-align: left;}
 .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .label-row label { margin-bottom: 0; }
 .forgot-link { color: #4f46e5; font-size: 0.85rem; font-weight: 600; text-decoration: none; transition: 0.3s;}
 .forgot-link:hover { color: #3730a3; text-decoration: underline; }
 
-.phone-input-wrapper, .modern-input-wrapper { display: flex; align-items: center; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; overflow: hidden; transition: all 0.3s ease; }
-.phone-input-wrapper.is-focused, .modern-input-wrapper.is-focused { border-color: #4f46e5; background: white; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+.modern-input-wrapper { display: flex; align-items: center; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; overflow: hidden; transition: all 0.3s ease; width: 100%;}
+.modern-input-wrapper.is-focused, .modern-input-wrapper.is-error { border-color: #4f46e5; background: white; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+.modern-input-wrapper.is-error { border-color: #ef4444; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1); }
 .country-select { border: none; background: transparent; padding: 16px 10px 16px 15px; font-size: 0.95rem; font-weight: 700; color: #0f172a; outline: none; cursor: pointer; max-width: 120px;}
 .input-divider { width: 2px; height: 24px; background: #e2e8f0; margin: 0 5px; }
-.modern-input { flex: 1; border: none; background: transparent; padding: 16px 15px 16px 5px; font-size: 1rem; color: #0f172a; outline: none; font-weight: 600;}
+.modern-input { flex: 1; border: none; background: transparent; padding: 16px 15px 16px 5px; font-size: 1rem; color: #0f172a; outline: none; font-weight: 600; width: 100%;}
 .modern-input::placeholder { color: #94a3b8; font-weight: 400;}
 .input-icon { padding: 0 10px 0 15px; font-size: 1.2rem; color: #64748b; }
 
@@ -423,8 +543,6 @@ button { cursor: pointer; border-radius: 12px; font-size: 1.05rem; font-weight: 
 .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4); }
 .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
 .btn-success:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4); }
-.btn-primary:disabled, .btn-success:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none;}
-
 .btn-secondary { background: #f1f5f9; color: #475569; padding: 16px; flex: 1;}
 .btn-secondary:hover { background: #e2e8f0; }
 .btn-text-outline { width: 100%; padding: 16px; background: transparent; color: #0f172a; border: 2px solid #e2e8f0; margin-top: 15px; }
@@ -432,10 +550,10 @@ button { cursor: pointer; border-radius: 12px; font-size: 1.05rem; font-weight: 
 .btn-text { background: none; border: none; color: #4f46e5; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.3s; padding: 5px; }
 .btn-text:hover { text-decoration: underline; }
 
-.form-actions { display: flex; gap: 15px; }
+.action-buttons { display: flex; gap: 15px; }
 .flex-2 { flex: 2; }
 .mt-3 { margin-top: 1rem; } .mt-4 { margin-top: 1.5rem; } .mt-5 { margin-top: 2rem; }
-.error-msg { display: block; color: #ef4444; font-size: 0.85rem; font-weight: 600; margin-top: 8px; }
+.error-msg { display: block; color: #ef4444; font-size: 0.85rem; font-weight: 600; margin-top: 8px; text-align: left;}
 
 .loader { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid white; border-radius: 50%; width: 22px; height: 22px; animation: spin 1s linear infinite; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -452,8 +570,6 @@ button { cursor: pointer; border-radius: 12px; font-size: 1.05rem; font-weight: 
 .s-body { background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
 .s-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.95rem; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px;}
 .s-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0;}
-.s-row span { color: #64748b; font-weight: 500;}
-.s-row strong { color: #0f172a; font-weight: 700; text-align: right;}
 .terms-text { text-align: center; color: #64748b; font-size: 0.85rem;}
 
 .fade-slide-enter-active, .fade-slide-leave-active { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -465,11 +581,50 @@ button { cursor: pointer; border-radius: 12px; font-size: 1.05rem; font-weight: 
 .slide-left-enter-from { opacity: 0; transform: translateX(30px); }
 .slide-left-leave-to { opacity: 0; transform: translateX(-30px); }
 
+/* ==========================================================================
+   📱 MEDIA QUERIES KWA AJILI YA RESPONSIVENESS YA SIMU NA TABLET 📱
+========================================================================== */
+.mobile-privacy-link { display: none; margin-top: 15px; font-size: 0.95rem; }
+.mobile-privacy-link a { color: #4f46e5; text-decoration: underline; font-weight: 700;}
+
 @media (max-width: 992px) {
-  .auth-container { flex-direction: column; overflow-y: auto; }
-  .brand-side { padding: 3rem 2rem; flex: none; text-align: center; align-items: center; }
-  .brand-bottom { display: none; }
-  .form-side { padding: 2rem 1rem; }
-  .glass-card { padding: 2rem 1.5rem; }
+  .auth-container { 
+    flex-direction: column; 
+    height: auto; 
+    /* HAPA NDIPO TATIZO LILIPOTATULIWA (Inaruhusu kuscroll kwenye simu) */
+    overflow-y: auto; 
+  }
+  
+  .brand-side { 
+    padding: 3rem 1.5rem; 
+    flex: none; 
+    text-align: center; 
+    align-items: center; 
+  }
+  
+  .desktop-only { display: none; } /* Inaficha link za Footer ya kompyuta kwenye simu */
+  .mobile-privacy-link { display: block; } /* Inaonyesha link mpya ya Faragha chini ya fomu kwenye simu */
+  
+  .hero-title { font-size: 2.2rem; }
+  .subtitle { max-width: 100%; font-size: 1rem; margin-bottom: 1.5rem;}
+  
+  .form-side { 
+    padding: 2rem 1rem; 
+    align-items: flex-start; /* Inaruhusu Form kukaa vizuri juu na kupumua */
+  }
+  
+  .glass-card { padding: 2rem 1.5rem; margin-bottom: 2rem; width: 100%;}
+  .privacy-card { padding: 1.5rem !important; max-height: none; } /* Inaruhusu Privacy Policy kushuka mpaka chini sana kwenye simu */
+  .wide-wrapper { max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .hero-title { font-size: 1.8rem; }
+  .glass-card { padding: 1.5rem 1.2rem; border-radius: 16px;}
+  .form-header h2 { font-size: 1.4rem; }
+  .country-select { max-width: 90px; padding-left: 5px; font-size: 0.85rem;}
+  .modern-input { font-size: 0.95rem; padding-left: 5px;}
+  .action-buttons { flex-direction: column; } /* Kwenye simu ndogo sana, vifungo vikae kimoja chini ya kingine */
+  .btn-primary, .btn-secondary, .btn-success, .btn-text-outline { width: 100%; padding: 14px; font-size: 0.95rem;}
 }
 </style>
