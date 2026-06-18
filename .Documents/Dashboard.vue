@@ -78,12 +78,6 @@
           <p class="date-text">{{ currentDate }}</p>
         </div>
         <div class="topbar-actions">
-          
-          <div class="status-badge" :class="isSocketConnected ? 'bg-success' : 'bg-warning'" style="margin-right: 10px;">
-            <span class="pulse-dot" :class="isSocketConnected ? 'pulse-green' : 'pulse-orange'"></span> 
-            <span>{{ isSocketConnected ? 'Live Sync ⚡' : 'Inaunganisha...' }}</span>
-          </div>
-
           <div class="status-badge" :class="userData?.whatsappPhoneId ? 'bg-success' : 'bg-warning'">
             <span class="pulse-dot" :class="userData?.whatsappPhoneId ? 'pulse-green' : 'pulse-orange'"></span> 
             <span>{{ userData?.whatsappPhoneId ? 'API Imeunganishwa' : 'API Haijaunganishwa' }}</span>
@@ -209,10 +203,10 @@
           </div>
 
           <div v-else-if="currentView === 'chat'" key="chat" class="view-panel chat-layout">
-             <div class="chat-sidebar" :class="{'hide-on-mobile': activeChat !== null}">
+             <div class="chat-sidebar">
                <div class="chat-header">
                  <h3>Inbox ya Wateja</h3>
-                 <span class="new-chat-icon" title="Onyesha Wateja upya" @click="fetchContactsSilent">🔄</span>
+                 <span class="new-chat-icon" title="Onyesha Wateja upya" @click="fetchContacts">🔄</span>
                </div>
                <div class="chat-search">
                  <div class="search-wrap">
@@ -221,7 +215,7 @@
                  </div>
                </div>
                
-               <div class="chat-list custom-scrollbar">
+               <div class="chat-list">
                  <div v-if="filteredContacts.length === 0" class="empty-state" style="margin-top: 50px;">
                    <span class="icon">📭</span><p>Hakuna meseji.</p>
                  </div>
@@ -248,10 +242,9 @@
                </div>
              </div>
 
-             <div class="chat-main" :class="{'show-on-mobile': activeChat !== null}" v-if="activeChat">
+             <div class="chat-main" v-if="activeChat">
                 <div class="active-chat-header">
                   <div class="active-profile">
-                    <button class="back-btn-mobile" @click="activeChat = null">⬅️</button>
                     <div class="avatar">{{ currentActiveContact?.name?.charAt(0).toUpperCase() || 'U' }}</div>
                     <div class="details">
                       <h4>{{ currentActiveContact.name }}</h4>
@@ -264,8 +257,8 @@
                   </div>
                 </div>
 
-                <div class="chat-messages-area custom-scrollbar" ref="chatScroll">
-                  <div class="date-divider"><span>Historia ya Meseji (Live Sync ⚡)</span></div>
+                <div class="chat-messages-area" ref="chatScroll">
+                  <div class="date-divider"><span>Historia ya Meseji</span></div>
                   
                   <div class="enc-alert bg-success text-dark" style="border: 1px solid #10b981;">
                     <span class="lock-icon-small">🛡️</span> Ujumbe unalindwa. Gharama ya Kujibu: <strong>TZS 30/SMS</strong>. (Ndani ya Masaa 24).
@@ -303,7 +296,7 @@
                 </div>
              </div>
 
-             <div class="chat-main empty-mobile" v-else>
+             <div class="chat-main" v-else>
                 <div class="empty-chat-view">
                   <div class="lock-circle">📱</div>
                   <h2>KEDESH SAAS Web</h2>
@@ -356,9 +349,6 @@ import { ref, reactive, computed, nextTick, onMounted, onUnmounted, watch } from
 import * as XLSX from 'xlsx'; 
 import axios from 'axios';
 
-// 🔥 1. TUNAINGIZA SOCKET.IO CLIENT ILI KUDAKA MESEJI LAAIVU 🔥
-import { io } from "socket.io-client";
-
 const props = defineProps({ user: { type: Object, required: true } });
 const emit = defineEmits(['logout']);
 
@@ -378,106 +368,6 @@ const pageTitle = computed(() => {
 const currentDate = computed(() => new Date().toLocaleDateString('sw-TZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
 const formatMoney = (amount) => { return Number(amount || 0).toLocaleString(); };
 
-// ==========================================
-// 🚀 2. MTAMBO WA KIBILIONEA WA SOCKET.IO 🚀
-// ==========================================
-let socket = null;
-const isSocketConnected = ref(false);
-
-// Sauti ya "Ting!" Meseji mpya ikiingia
-const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
-
-const initSocket = () => {
-    const token = localStorage.getItem('msamba_token');
-    if(!token) return;
-
-    // Unganisha na Server yako ya Render
-    socket = io("https://kedesh-whatsapp-api.onrender.com", {
-        auth: { token: token },
-        transports: ['websocket', 'polling']
-    });
-
-    socket.on("connect", () => {
-        isSocketConnected.value = true;
-        console.log("🔌 [SOCKET LIVE] Imeunganishwa kikamilifu!");
-    });
-
-    socket.on("disconnect", () => {
-        isSocketConnected.value = false;
-        console.log("🔴 [SOCKET OFF] Muunganiko umekata.");
-    });
-
-    // 📩 DAKA MESEJI MPYA IKIINGIA LIVE!
-    socket.on("newIncomingMessage", (data) => {
-        console.log("🔥 [LIVE SMS INAINGIA]:", data);
-        
-        const isMe = data.contactName === "You" || data.message.direction === 'OUTBOUND';
-        
-        // Piga Sauti ya Ting! Kama imetoka kwa mteja mwingine (Sio wewe PC yako)
-        if (!isMe) {
-            notificationSound.play().catch(e => console.log("Browser imezuia sauti."));
-        }
-
-        // KAMA TUNA-CHAT NA HUYU MTEJA MDA HUU, WEKA MESEJI YAKE KWENYE KIOO PAPO HAPO
-        if (activeChat.value === data.contactId) {
-            const exists = chatMessages.value.find(m => m.id === data.message.id || (m.text === data.message.content && m.status === 'PENDING'));
-            
-            if (!exists) {
-                chatMessages.value.push({
-                    id: data.message.id,
-                    metaMsgId: data.message.metaMsgId,
-                    direction: data.message.direction,
-                    text: data.message.content,
-                    status: data.message.status,
-                    time: formatTime(data.message.createdAt)
-                });
-                scrollToBottom();
-            } else if (exists && exists.status === 'PENDING') {
-                exists.id = data.message.id;
-                exists.status = data.message.status;
-            }
-
-            // Mjulishe Database kuwa TUMEISOMA hii meseji maana lipo wazi
-            if (!isMe) {
-                axios.get(`https://kedesh-whatsapp-api.onrender.com/api/chat/messages/${data.contactId}`, { 
-                    headers: { Authorization: `Bearer ${token}` } 
-                }).catch(e=>{});
-            }
-        }
-
-        // FETCH CONTACTS KUPATA UNREAD BADGES MPYA BILA KUREFRESH UKURASA
-        fetchContactsSilent();
-    });
-
-    // ✅ DAKA TIKI ZA KUSOMA (BLUE TICKS & DELIVERED) LIVE!
-    socket.on("messageStatusUpdate", (data) => {
-        console.log("✅ [LIVE TIKI]:", data);
-        // Badilisha tiki machoni papo hapo
-        const msg = chatMessages.value.find(m => m.metaMsgId === data.metaMsgId);
-        if (msg) {
-            msg.status = data.status;
-        }
-
-        // Update list ya majina pembeni
-        const contact = chatContacts.value.find(c => c.id === activeChat.value);
-        if(contact && contact.lastStatus !== 'READ') {
-             contact.lastStatus = data.status;
-        }
-    });
-};
-
-// Vuta list ya watu kimya kimya kuepuka flickering
-const fetchContactsSilent = async () => {
-  try {
-    const token = localStorage.getItem('msamba_token');
-    const res = await axios.get('https://kedesh-whatsapp-api.onrender.com/api/chat/contacts', { headers: { Authorization: `Bearer ${token}` } });
-    if(res.data.success) { chatContacts.value = res.data.contacts.map(c => ({ ...c, time: formatTime(c.time) })); }
-  } catch(e) {}
-};
-
-// ==========================================
-// 📊 DASHBOARD & STATS LOGIC 
-// ==========================================
 const totalSent = ref(0); 
 const totalDelivered = ref(0); 
 const totalContacts = ref(0); 
@@ -485,21 +375,22 @@ const totalFailed = ref(0);
 const isLoadingStats = ref(true);
 
 const fetchDashboardStats = async () => {
-  try {
-      const token = localStorage.getItem('msamba_token');
-      if(!token) return;
-      const res = await axios.get('https://kedesh-whatsapp-api.onrender.com/api/dashboard/stats', { headers: { Authorization: `Bearer ${token}` } });
-      if(res.data.success) {
-          totalSent.value = res.data.stats.totalSent || 0;
-          totalDelivered.value = res.data.stats.totalDelivered || 0;
-          totalContacts.value = res.data.stats.totalContacts || 0;
-          totalFailed.value = res.data.stats.totalFailed || 0;
-      }
-  } catch(e) {}
-  finally { isLoadingStats.value = false; }
+    try {
+        const token = localStorage.getItem('msamba_token');
+        if(!token) return;
+        const res = await axios.get('https://kedesh-whatsapp-api.onrender.com/api/dashboard/stats', { headers: { Authorization: `Bearer ${token}` } });
+        if(res.data.success) {
+            totalSent.value = res.data.stats.totalSent || 0;
+            totalDelivered.value = res.data.stats.totalDelivered || 0;
+            totalContacts.value = res.data.stats.totalContacts || 0;
+            totalFailed.value = res.data.stats.totalFailed || 0;
+        }
+    } catch(e) {}
+    finally { isLoadingStats.value = false; }
 };
 
 const showTopupModal = ref(false);
+
 const phoneIdInput = ref('');
 const isSavingSettings = ref(false);
 const settingsMessage = ref({ type: '', text: '' });
@@ -526,7 +417,6 @@ const saveSettings = async () => {
     finally { isSavingSettings.value = false; }
 };
 
-// ======================= BULK SMS =======================
 const fileInput = ref(null); const selectedFile = ref(null); const parsedContacts = ref([]);
 const campaignName = ref(''); 
 const templateNameInput = ref('weekend_ofa_ijumamosi'); 
@@ -596,7 +486,6 @@ const sendBulkSMS = async () => {
    } finally { isSending.value = false; }
 };
 
-// ======================= LIVE CHAT =======================
 const activeChat = ref(null); 
 const chatScroll = ref(null);
 const newChatMessage = ref('');
@@ -604,7 +493,7 @@ const chatContacts = ref([]);
 const chatMessages = ref([]);
 const isSendingChat = ref(false);
 const searchQuery = ref('');
-let statsPolling = null; 
+let globalPolling = null; 
 
 const currentActiveContact = computed(() => { return chatContacts.value.find(c => c.id === activeChat.value) || {}; });
 const formatTime = (dateString) => { if (!dateString) return ''; return new Date(dateString).toLocaleTimeString('sw-TZ', { hour: '2-digit', minute: '2-digit' }); };
@@ -615,7 +504,6 @@ const filteredContacts = computed(() => {
   return chatContacts.value.filter(c => c.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || c.phone.includes(searchQuery.value));
 });
 
-// Tunaiita tu wakati component inaanza
 const fetchContacts = async () => {
   try {
     const token = localStorage.getItem('msamba_token');
@@ -630,19 +518,13 @@ const fetchMessages = async (contactId) => {
     const token = localStorage.getItem('msamba_token');
     const res = await axios.get(`https://kedesh-whatsapp-api.onrender.com/api/chat/messages/${contactId}`, { headers: { Authorization: `Bearer ${token}` } });
     if(res.data.success) {
+      const isAtBottom = chatScroll.value ? (chatScroll.value.scrollHeight - chatScroll.value.scrollTop <= chatScroll.value.clientHeight + 50) : true;
       const isFirstLoad = chatMessages.value.length === 0;
+      const oldLength = chatMessages.value.length;
       
-      // HAPA TUMEONGEZA metaMsgId ILI SOCKET IWEZE KUBAINI TIKI ZIKIBADILIKA
-      chatMessages.value = res.data.messages.map(m => ({ 
-          id: m.id, 
-          metaMsgId: m.metaMsgId, 
-          direction: m.direction, 
-          text: m.content, 
-          status: m.status, 
-          time: formatTime(m.createdAt) 
-      }));
+      chatMessages.value = res.data.messages.map(m => ({ id: m.id, direction: m.direction, text: m.content, status: m.status, time: formatTime(m.createdAt) }));
       
-      if(isFirstLoad) scrollToBottom();
+      if(isAtBottom || isFirstLoad || chatMessages.value.length > oldLength) scrollToBottom();
     }
   } catch(e) {}
 };
@@ -658,9 +540,8 @@ const sendLiveMessage = async () => {
   const textToSend = newChatMessage.value;
   newChatMessage.value = ''; isSendingChat.value = true;
 
-  // Weka Ujumbe kwenye Kioo Fast-Fast Kabla ya Kwenda Server
   const tempId = Date.now();
-  chatMessages.value.push({ id: tempId, metaMsgId: null, direction: 'OUTBOUND', text: textToSend, status: 'PENDING', time: new Date().toLocaleTimeString('sw-TZ', { hour: '2-digit', minute: '2-digit' }) });
+  chatMessages.value.push({ id: tempId, direction: 'OUTBOUND', text: textToSend, status: 'PENDING', time: new Date().toLocaleTimeString('sw-TZ', { hour: '2-digit', minute: '2-digit' }) });
   scrollToBottom();
 
   try {
@@ -674,8 +555,7 @@ const sendLiveMessage = async () => {
         fetchDashboardStats();
     }
 
-    // Tuna re-fetch meseji ili kupata metaMsgId rasmi toka Database baada ya kusend
-    fetchMessages(activeChat.value); fetchContactsSilent();
+    fetchMessages(activeChat.value); fetchContacts();
   } catch (error) {
     chatMessages.value = chatMessages.value.filter(m => m.id !== tempId); 
     if(error.response?.status === 402) { alert("Salio lako limeisha."); }
@@ -687,31 +567,25 @@ const sendLiveMessage = async () => {
 
 const scrollToBottom = async () => { await nextTick(); if (chatScroll.value) { chatScroll.value.scrollTop = chatScroll.value.scrollHeight; } };
 
-// TUMEONDOA POLLING YA KILA SEKUNDE 3 KWA CHAT! (Socket inafanya kazi hiyo)
-// Tumebakiza Polling ya kawaida kwa ajili ya Dashboard Stats tu.
-const startStatsPolling = () => { 
-  fetchDashboardStats();
-  statsPolling = setInterval(() => { 
-    if(currentView.value === 'home') fetchDashboardStats(false);
-  }, 15000); 
+const startPolling = () => { 
+  if(currentView.value === 'home') fetchDashboardStats();
+  if(currentView.value === 'chat') fetchContacts();
+  
+  globalPolling = setInterval(() => { 
+    if(currentView.value === 'chat') {
+        fetchContacts(); 
+        if(activeChat.value) fetchMessages(activeChat.value); 
+    } else if(currentView.value === 'home') {
+        fetchDashboardStats();
+    }
+  }, 3000); 
 };
 
-const stopStatsPolling = () => { if (statsPolling) { clearInterval(statsPolling); statsPolling = null; } };
+const stopPolling = () => { if (globalPolling) { clearInterval(globalPolling); globalPolling = null; } };
 
-watch(currentView, (newView) => { 
-    if(newView === 'chat') { fetchContacts(); } 
-});
-
-onMounted(() => { 
-    initSocket(); // 🚀 WASHA SOCKET MTU AKIINGIA 
-    startStatsPolling(); 
-    fetchContacts(); // Vuta wateja mara moja akiingia
-});
-
-onUnmounted(() => { 
-    stopStatsPolling(); 
-    if(socket) socket.disconnect(); // Funga socket akifunga tab
-});
+watch(currentView, (newView) => { stopPolling(); startPolling(); });
+onMounted(() => { fetchDashboardStats(); startPolling(); });
+onUnmounted(() => { stopPolling(); });
 </script>
 
 <style scoped>
@@ -850,12 +724,6 @@ onUnmounted(() => {
 .details p { color: #667781; font-size: 0.8rem; }
 .chat-actions .icon-btn { background: none; border: none; font-size: 1.2rem; color: #54656f; cursor: pointer; padding: 8px; margin-left: 10px; border-radius: 50%;}
 .chat-messages-area { flex: 1; padding: 30px 6%; overflow-y: auto; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: contain; background-repeat: repeat; display: flex; flex-direction: column; gap: 6px; scroll-behavior: smooth;}
-
-/* MTAMBO WA SCROLLBAR MPYA KUZUIA UKUBWA MBOVU */
-.custom-scrollbar::-webkit-scrollbar { width: 6px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
-
 .enc-alert { background: #ffeecd; color: #54656f; font-size: 0.8rem; text-align: center; padding: 8px 15px; border-radius: 10px; align-self: center; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
 .bg-success { background: #ecfdf5 !important; border: 1px solid #a7f3d0;}
 .date-divider { text-align: center; margin: 15px 0; }
@@ -872,7 +740,7 @@ onUnmounted(() => {
 .msg-time { font-size: 0.65rem; color: #667781; }
 .msg-ticks { display: flex; align-items: center; margin-top: -2px;}
 
-.chat-input-area { background: #f0f2f5; padding: 12px 20px; display: flex; align-items: center; gap: 15px; border-top: 1px solid #d1d7db; border-bottom-right-radius: 20px; z-index: 10;}
+.chat-input-area { background: #f0f2f5; padding: 12px 20px; display: flex; align-items: center; gap: 15px; border-top: 1px solid #d1d7db; z-index: 10;}
 .chat-action-btn { background: none; border: none; font-size: 1.5rem; color: #54656f; cursor: pointer;}
 .chat-input-area input { flex: 1; padding: 12px 20px; border-radius: 24px; border: none; outline: none; font-size: 0.95rem; box-shadow: 0 1px 1px rgba(0,0,0,0.05); }
 .send-msg-btn { background: #00a884; width: 45px; height: 45px; border-radius: 50%; border: none; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; padding-right: 2px;}
@@ -897,44 +765,4 @@ onUnmounted(() => {
 
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(10px); }
-
-/* ========================================================
-   📱 RESPONSIVENESS MPYA YA SIMU & TABLET (MOBILE UI)
-   ======================================================== */
-.back-btn-mobile { display: none; background: none; border: none; font-size: 1.5rem; margin-right: 10px; cursor: pointer; }
-
-@media (max-width: 992px) {
-  .dashboard-layout { flex-direction: column; overflow-y: auto; height: 100vh; }
-  .sidebar { width: 100%; padding: 15px; border-bottom: 1px solid #1e293b; flex-direction: column;}
-  .brand { border-bottom: none; padding: 0 0 15px 0; justify-content: center; }
-  .nav-menu { display: flex; overflow-x: auto; gap: 10px; padding: 0; margin-bottom: 5px; flex-direction: row;}
-  .menu-label { display: none; }
-  .nav-btn { width: auto; white-space: nowrap; padding: 10px 15px; margin: 0; }
-  .sidebar-footer { display: none; }
-  
-  .topbar { padding: 15px; height: auto; flex-direction: column; gap: 15px; align-items: flex-start; }
-  .topbar-actions { flex-wrap: wrap; width: 100%; justify-content: flex-start; gap: 10px;}
-  .status-badge { font-size: 0.75rem; padding: 6px 12px; }
-  
-  .content-area { padding: 15px; }
-  .grid-layout { grid-template-columns: 1fr; }
-  
-  .chat-layout { flex-direction: column; height: 80vh; }
-  
-  /* Kuhide sidebar kama upo ndani ya chat (kwenye simu) */
-  .chat-sidebar.hide-on-mobile { display: none; }
-  .chat-sidebar { width: 100%; height: 100%; border-right: none; }
-  
-  /* Kuonyesha main chat tu (kwenye simu) */
-  .chat-main { display: none; width: 100%; height: 100%; }
-  .chat-main.show-on-mobile { display: flex; }
-  .chat-main.empty-mobile { display: none; }
-  
-  .back-btn-mobile { display: block; } /* Kitufe cha kurudi nyuma kinaonekana sasa */
-  .message-bubble { max-width: 85%; }
-  
-  .active-profile .avatar { width: 35px; height: 35px; font-size: 0.9rem;}
-  .details h4 { font-size: 0.9rem; }
-  .chat-input-area input { padding: 10px 15px; }
-}
 </style>
