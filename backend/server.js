@@ -169,7 +169,26 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
         const fbUserRes = await axios.get(`https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`);
         const fbUser = fbUserRes.data;
 
-        // 2. Mtafute au Mtengeneze Mteja kwenye Kanzidata
+        let wabaId = null;
+        let phoneId = null;
+
+        // 2. SAFE BLOCK: Tunavuta WABA ID kiotomatiki (Ikishindwa, hai-crash mfumo)
+        try {
+            const wabaRes = await axios.get(`https://graph.facebook.com/v20.0/me/client_whatsapp_business_accounts?access_token=${accessToken}`);
+            
+            if (wabaRes.data?.data?.length > 0) {
+                wabaId = wabaRes.data.data[0].id;
+                
+                const phoneRes = await axios.get(`https://graph.facebook.com/v20.0/${wabaId}/phone_numbers?access_token=${accessToken}`);
+                if (phoneRes.data?.data?.length > 0) {
+                    phoneId = phoneRes.data.data[0].id;
+                }
+            }
+        } catch (metaErr) {
+            console.log("⚠️ Meta haijatoa WABA ID kiotomatiki, lakini mteja anaendelea kuingia kwenye mfumo.");
+        }
+
+        // 3. Mtafute au Mtengeneze Mteja kwenye Kanzidata
         let business = await prisma.business.findUnique({ where: { facebookId: fbUser.id } });
 
         if (!business) {
@@ -179,14 +198,20 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
                     fullName: fbUser.name,
                     facebookId: fbUser.id,
                     metaAccessToken: accessToken,
+                    wabaId: wabaId,
+                    whatsappPhoneId: phoneId,
                     walletBalance: 0.0
                 }
             });
-            console.log(`\n🎊 [MTEJA MPYA SAAS (META)] -> Jina: ${business.businessName}`);
+            console.log(`\n🎊 [MTEJA MPYA SAAS (META)] -> Jina: ${business.businessName} | WABA ID: ${wabaId || 'Hajamaliza Setup'}`);
         } else {
             business = await prisma.business.update({
                 where: { id: business.id },
-                data: { metaAccessToken: accessToken }
+                data: { 
+                    metaAccessToken: accessToken,
+                    ...(wabaId && { wabaId }),
+                    ...(phoneId && { whatsappPhoneId: phoneId })
+                }
             });
             console.log(`🔓 [META LOGIN SUCCESS] -> ${business.businessName} ameingia.`);
         }

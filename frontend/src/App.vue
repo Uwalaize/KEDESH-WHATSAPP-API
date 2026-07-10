@@ -350,7 +350,7 @@ const nextStep = () => {
   if (step.value < 3) step.value++;
 };
 
-// 🔥 FACEBOOK AUTHENTICATION LOGIC 🔥
+// 🔥 FACEBOOK EMBEDDED SIGNUP WIZARD LOGIC 🔥
 const loginWithFacebook = () => {
   isLoading.value = true;
   isFacebookAuth.value = true;
@@ -363,6 +363,7 @@ const loginWithFacebook = () => {
     return;
   }
 
+  // TUNAITA DIRISHA KWA KUTUMIA CONFIGURATION ID MPYA YA WABA
   window.FB.login((response) => {
     if (response.authResponse) {
       const accessToken = response.authResponse.accessToken;
@@ -370,11 +371,11 @@ const loginWithFacebook = () => {
     } else {
       isLoading.value = false;
       isFacebookAuth.value = false;
-      authError.value = "Umesitisha zoezi la kuunganisha akaunti yako ya Facebook.";
+      authError.value = "Umesitisha zoezi la kuunganisha WABA akaunti yako.";
     }
   }, {
-    scope: 'business_management,whatsapp_business_management,whatsapp_business_messaging',
-    return_scopes: true
+    config_id: '1550680676648524',
+    override_default_response_type: true
   });
 };
 
