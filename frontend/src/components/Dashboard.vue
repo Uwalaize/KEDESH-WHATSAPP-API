@@ -1,6 +1,7 @@
 <template>
   <div class="dashboard-layout">
     
+    <!-- MODAL YA KUONGEZA SALIO -->
     <transition name="fade">
       <div v-if="showTopupModal" class="modal-overlay" @click.self="showTopupModal = false">
         <div class="modal-card">
@@ -27,6 +28,7 @@
       </div>
     </transition>
 
+    <!-- MENU YA PEMBENI (SIDEBAR) -->
     <aside class="sidebar">
       <div class="brand">
         <img src="/logo/image.png" alt="Kedesh Limited" class="brand-logo" />
@@ -48,7 +50,7 @@
         
         <p class="menu-label mt-4">MIPANGILIO</p>
         <button :class="['nav-btn', { active: currentView === 'settings' }]" @click="currentView = 'settings'">
-          <span class="icon">⚙️</span> <span class="text">API & Mipangilio</span>
+          <span class="icon">⚙️</span> <span class="text">API & Akaunti</span>
         </button>
       </div>
 
@@ -72,6 +74,7 @@
     </aside>
 
     <main class="main-content">
+      <!-- HEADER YA JUU -->
       <header class="topbar">
         <div class="page-title">
           <h1>{{ pageTitle }}</h1>
@@ -95,6 +98,7 @@
       <div class="content-area">
         <transition name="fade" mode="out-in">
           
+          <!-- HOME VIEW (MUHTASARI) -->
           <div v-if="currentView === 'home'" key="home" class="view-panel">
             <div class="welcome-banner">
               <div class="banner-text">
@@ -141,6 +145,7 @@
             </div>
           </div>
 
+          <!-- BULK SMS VIEW -->
           <div v-else-if="currentView === 'bulk'" key="bulk" class="view-panel">
              <div class="grid-layout">
                 <div class="card form-card">
@@ -208,6 +213,7 @@
              </div>
           </div>
 
+          <!-- LIVE CHAT VIEW -->
           <div v-else-if="currentView === 'chat'" key="chat" class="view-panel chat-layout">
              <div class="chat-sidebar" :class="{'hide-on-mobile': activeChat !== null}">
                <div class="chat-header">
@@ -313,33 +319,46 @@
              </div>
           </div>
 
+          <!-- 🔥 MIPANGILIO YA AKAUNTI (AUTO-FETCHED WABA & PHONE ID) 🔥 -->
           <div v-else-if="currentView === 'settings'" key="settings" class="view-panel">
             <div class="card settings-card">
-              <h3>⚙️ Mipangilio ya Akaunti (Phone ID)</h3>
-              <p class="text-muted mb-4">Weka Phone ID uliyopewa na Admin ili SMS ziende kwa Jina lako la Biashara.</p>
+              <div class="settings-header text-center mb-4">
+                 <div class="lock-icon" style="font-size: 3.5rem; margin-bottom: 10px;">🛡️</div>
+                 <h3 style="font-size: 1.6rem; color: #0f172a; font-weight: 800;">Akaunti yako ya WhatsApp</h3>
+                 <p class="text-muted">Taarifa zako za siri zinazolindwa na Mfumo wa Meta.</p>
+              </div>
               
-              <div v-if="settingsMessage.text" class="alert-box mb-4" :class="settingsMessage.type === 'success' ? 'success' : 'warning'">
-                <span class="a-icon">{{ settingsMessage.type === 'success' ? '✅' : '❌' }}</span> {{ settingsMessage.text }}
+              <div v-if="userData?.whatsappPhoneId && userData?.wabaId" class="locked-box mt-4">
+                 <span class="badge-live mb-3">Live & Connected ⚡</span>
+                 
+                 <div class="api-detail-group">
+                    <span class="detail-label">Jina la Biashara</span>
+                    <span class="detail-value text-blue">{{ userData.businessName }}</span>
+                 </div>
+                 
+                 <div class="api-detail-group mt-3">
+                    <span class="detail-label">WhatsApp Business Account (WABA ID)</span>
+                    <span class="detail-value text-dark">{{ userData.wabaId }}</span>
+                 </div>
+
+                 <div class="api-detail-group mt-3">
+                    <span class="detail-label">Phone Number ID</span>
+                    <span class="detail-value text-dark" style="font-family: monospace; font-size: 1.2rem; letter-spacing: 2px;">{{ userData.whatsappPhoneId }}</span>
+                 </div>
+
+                 <div class="alert-box info mt-4 text-left" style="font-size: 0.85rem;">
+                    <span class="a-icon">ℹ️</span> Namba hizi zimesomwa kiotomatiki kutoka kwenye akaunti yako ya Facebook ulipojiunga na mfumo. Zimefungwa kiusalama.
+                 </div>
               </div>
 
-              <div v-if="userData?.whatsappPhoneId" class="locked-box mt-4">
-                 <div class="lock-icon">🔒</div>
-                 <h4>Akaunti Imeunganishwa Kikamilifu</h4>
-                 <p>Phone ID: <strong>{{ userData.whatsappPhoneId }}</strong></p>
-                 <span class="lock-text">Ili kubadilisha namba hii, tafadhali wasiliana na Utawala (Admin).</span>
-              </div>
-
-              <div v-else>
-                <div class="form-group">
-                  <label>WhatsApp Phone Number ID</label>
-                  <input type="text" v-model="phoneIdInput" class="form-control" placeholder="Mfano: 1183411168186599" :disabled="isSavingSettings" />
-                  <p class="small-hint mt-2 text-red" style="font-weight: bold;">⚠️ TAFADHALI HAKIKISHA NAMBA IPO SAHIHI! Ukishahifadhi itafungwa na hutaweza kuibadili tena peke yako.</p>
-                </div>
-                
-                <button class="btn-primary mt-4" style="max-width: 300px;" @click="saveSettings" :disabled="isSavingSettings || !phoneIdInput">
-                  <span v-if="isSavingSettings" class="loader-small"></span>
-                  <span v-else>💾 Hifadhi na Funga Mipangilio</span>
-                </button>
+              <!-- IKIWA MTEJA ALIRUKA SETUP YAKE YA WABA KULE FACEBOOK -->
+              <div v-else class="locked-box bg-warning-light mt-4">
+                 <div class="lock-icon text-warning">⚠️</div>
+                 <h4 class="text-warning-dark">Setup Haijakamilika</h4>
+                 <p class="text-left mt-3">
+                    Inaonekana hukuweza kumaliza zoezi la kuunganisha namba yako ya WhatsApp kupitia dirisha la Facebook ulipokuwa unajisajili. <br><br>
+                    Tafadhali <strong>Toka nje ya Mfumo (Logout)</strong> kisha ingia tena kwa kutumia kitufe cha "Endelea na Facebook" na ufuate maelekezo yote hadi mwisho.
+                 </p>
               </div>
 
             </div>
@@ -355,8 +374,6 @@
 import { ref, reactive, computed, nextTick, onMounted, onUnmounted, watch } from 'vue';
 import * as XLSX from 'xlsx'; 
 import axios from 'axios';
-
-// 🔥 1. TUNAINGIZA SOCKET.IO CLIENT ILI KUDAKA MESEJI LAAIVU 🔥
 import { io } from "socket.io-client";
 
 const props = defineProps({ user: { type: Object, required: true } });
@@ -371,7 +388,7 @@ const pageTitle = computed(() => {
     case 'home': return 'Muhtasari wa Biashara';
     case 'bulk': return 'Kituo cha Bulk SMS';
     case 'chat': return 'Live Chat (Wateja)';
-    case 'settings': return 'Akaunti & Phone ID';
+    case 'settings': return 'Akaunti ya Meta';
     default: return 'Dashboard';
   }
 });
@@ -379,46 +396,28 @@ const currentDate = computed(() => new Date().toLocaleDateString('sw-TZ', { week
 const formatMoney = (amount) => { return Number(amount || 0).toLocaleString(); };
 
 // ==========================================
-// 🚀 2. MTAMBO WA KIBILIONEA WA SOCKET.IO 🚀
+// 🚀 SOCKET.IO LOGIC 🚀
 // ==========================================
 let socket = null;
 const isSocketConnected = ref(false);
-
-// Sauti ya "Ting!" Meseji mpya ikiingia
 const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
 
 const initSocket = () => {
     const token = localStorage.getItem('msamba_token');
     if(!token) return;
 
-    // Unganisha na Server yako ya Render
     socket = io("https://kedesh-whatsapp-api.onrender.com", {
         auth: { token: token },
         transports: ['websocket', 'polling']
     });
 
-    socket.on("connect", () => {
-        isSocketConnected.value = true;
-        console.log("🔌 [SOCKET LIVE] Imeunganishwa kikamilifu!");
-    });
+    socket.on("connect", () => { isSocketConnected.value = true; });
+    socket.on("disconnect", () => { isSocketConnected.value = false; });
 
-    socket.on("disconnect", () => {
-        isSocketConnected.value = false;
-        console.log("🔴 [SOCKET OFF] Muunganiko umekata.");
-    });
-
-    // 📩 DAKA MESEJI MPYA IKIINGIA LIVE!
     socket.on("newIncomingMessage", (data) => {
-        console.log("🔥 [LIVE SMS INAINGIA]:", data);
-        
         const isMe = data.contactName === "You" || data.message.direction === 'OUTBOUND';
-        
-        // Piga Sauti ya Ting! Kama imetoka kwa mteja mwingine (Sio wewe PC yako)
-        if (!isMe) {
-            notificationSound.play().catch(e => console.log("Browser imezuia sauti."));
-        }
+        if (!isMe) { notificationSound.play().catch(e => console.log("Browser imezuia sauti.")); }
 
-        // KAMA TUNA-CHAT NA HUYU MTEJA MDA HUU, WEKA MESEJI YAKE KWENYE KIOO PAPO HAPO
         if (activeChat.value === data.contactId) {
             const exists = chatMessages.value.find(m => m.id === data.message.id || (m.text === data.message.content && m.status === 'PENDING'));
             
@@ -437,36 +436,23 @@ const initSocket = () => {
                 exists.status = data.message.status;
             }
 
-            // Mjulishe Database kuwa TUMEISOMA hii meseji maana lipo wazi
             if (!isMe) {
                 axios.get(`https://kedesh-whatsapp-api.onrender.com/api/chat/messages/${data.contactId}`, { 
                     headers: { Authorization: `Bearer ${token}` } 
                 }).catch(e=>{});
             }
         }
-
-        // FETCH CONTACTS KUPATA UNREAD BADGES MPYA BILA KUREFRESH UKURASA
         fetchContactsSilent();
     });
 
-    // ✅ DAKA TIKI ZA KUSOMA (BLUE TICKS & DELIVERED) LIVE!
     socket.on("messageStatusUpdate", (data) => {
-        console.log("✅ [LIVE TIKI]:", data);
-        // Badilisha tiki machoni papo hapo
         const msg = chatMessages.value.find(m => m.metaMsgId === data.metaMsgId);
-        if (msg) {
-            msg.status = data.status;
-        }
-
-        // Update list ya majina pembeni
+        if (msg) { msg.status = data.status; }
         const contact = chatContacts.value.find(c => c.id === activeChat.value);
-        if(contact && contact.lastStatus !== 'READ') {
-             contact.lastStatus = data.status;
-        }
+        if(contact && contact.lastStatus !== 'READ') { contact.lastStatus = data.status; }
     });
 };
 
-// Vuta list ya watu kimya kimya kuepuka flickering
 const fetchContactsSilent = async () => {
   try {
     const token = localStorage.getItem('msamba_token');
@@ -478,10 +464,7 @@ const fetchContactsSilent = async () => {
 // ==========================================
 // 📊 DASHBOARD & STATS LOGIC 
 // ==========================================
-const totalSent = ref(0); 
-const totalDelivered = ref(0); 
-const totalContacts = ref(0); 
-const totalFailed = ref(0);
+const totalSent = ref(0); const totalDelivered = ref(0); const totalContacts = ref(0); const totalFailed = ref(0);
 const isLoadingStats = ref(true);
 
 const fetchDashboardStats = async () => {
@@ -500,31 +483,6 @@ const fetchDashboardStats = async () => {
 };
 
 const showTopupModal = ref(false);
-const phoneIdInput = ref('');
-const isSavingSettings = ref(false);
-const settingsMessage = ref({ type: '', text: '' });
-
-const saveSettings = async () => {
-    if(!phoneIdInput.value) return;
-    const confirmSave = confirm("Una uhakika namba hii ni sahihi? Ukishahifadhi hutaweza kubadilisha tena peke yako kwenye mfumo. Bonyeza OK kuendelea.");
-    if(!confirmSave) return;
-
-    isSavingSettings.value = true; settingsMessage.value = { type: '', text: '' };
-    try {
-        const token = localStorage.getItem('msamba_token');
-        const res = await axios.post('https://kedesh-whatsapp-api.onrender.com/api/settings/update', 
-            { whatsappPhoneId: phoneIdInput.value }, 
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if(res.data.success) {
-            settingsMessage.value = { type: 'success', text: "✅ Namba imehifadhiwa. Imefungwa kikamilifu!" };
-            userData.value.whatsappPhoneId = phoneIdInput.value; 
-        }
-    } catch (error) { 
-        settingsMessage.value = { type: 'error', text: error.response?.data?.error || "❌ Imeshindwa kuhifadhi. Jaribu tena." }; 
-    } 
-    finally { isSavingSettings.value = false; }
-};
 
 // ======================= BULK SMS =======================
 const fileInput = ref(null); const selectedFile = ref(null); const parsedContacts = ref([]);
@@ -615,7 +573,6 @@ const filteredContacts = computed(() => {
   return chatContacts.value.filter(c => c.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || c.phone.includes(searchQuery.value));
 });
 
-// Tunaiita tu wakati component inaanza
 const fetchContacts = async () => {
   try {
     const token = localStorage.getItem('msamba_token');
@@ -631,8 +588,6 @@ const fetchMessages = async (contactId) => {
     const res = await axios.get(`https://kedesh-whatsapp-api.onrender.com/api/chat/messages/${contactId}`, { headers: { Authorization: `Bearer ${token}` } });
     if(res.data.success) {
       const isFirstLoad = chatMessages.value.length === 0;
-      
-      // HAPA TUMEONGEZA metaMsgId ILI SOCKET IWEZE KUBAINI TIKI ZIKIBADILIKA
       chatMessages.value = res.data.messages.map(m => ({ 
           id: m.id, 
           metaMsgId: m.metaMsgId, 
@@ -641,7 +596,6 @@ const fetchMessages = async (contactId) => {
           status: m.status, 
           time: formatTime(m.createdAt) 
       }));
-      
       if(isFirstLoad) scrollToBottom();
     }
   } catch(e) {}
@@ -658,7 +612,6 @@ const sendLiveMessage = async () => {
   const textToSend = newChatMessage.value;
   newChatMessage.value = ''; isSendingChat.value = true;
 
-  // Weka Ujumbe kwenye Kioo Fast-Fast Kabla ya Kwenda Server
   const tempId = Date.now();
   chatMessages.value.push({ id: tempId, metaMsgId: null, direction: 'OUTBOUND', text: textToSend, status: 'PENDING', time: new Date().toLocaleTimeString('sw-TZ', { hour: '2-digit', minute: '2-digit' }) });
   scrollToBottom();
@@ -673,8 +626,6 @@ const sendLiveMessage = async () => {
         userData.value.walletBalance = res.data.newBalance;
         fetchDashboardStats();
     }
-
-    // Tuna re-fetch meseji ili kupata metaMsgId rasmi toka Database baada ya kusend
     fetchMessages(activeChat.value); fetchContactsSilent();
   } catch (error) {
     chatMessages.value = chatMessages.value.filter(m => m.id !== tempId); 
@@ -687,8 +638,6 @@ const sendLiveMessage = async () => {
 
 const scrollToBottom = async () => { await nextTick(); if (chatScroll.value) { chatScroll.value.scrollTop = chatScroll.value.scrollHeight; } };
 
-// TUMEONDOA POLLING YA KILA SEKUNDE 3 KWA CHAT! (Socket inafanya kazi hiyo)
-// Tumebakiza Polling ya kawaida kwa ajili ya Dashboard Stats tu.
 const startStatsPolling = () => { 
   fetchDashboardStats();
   statsPolling = setInterval(() => { 
@@ -698,19 +647,17 @@ const startStatsPolling = () => {
 
 const stopStatsPolling = () => { if (statsPolling) { clearInterval(statsPolling); statsPolling = null; } };
 
-watch(currentView, (newView) => { 
-    if(newView === 'chat') { fetchContacts(); } 
-});
+watch(currentView, (newView) => { if(newView === 'chat') { fetchContacts(); } });
 
 onMounted(() => { 
-    initSocket(); // 🚀 WASHA SOCKET MTU AKIINGIA 
+    initSocket(); 
     startStatsPolling(); 
-    fetchContacts(); // Vuta wateja mara moja akiingia
+    fetchContacts(); 
 });
 
 onUnmounted(() => { 
     stopStatsPolling(); 
-    if(socket) socket.disconnect(); // Funga socket akifunga tab
+    if(socket) socket.disconnect(); 
 });
 </script>
 
@@ -732,6 +679,7 @@ onUnmounted(() => {
 .contact-admin { background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px dashed #cbd5e1; display: inline-block; width: 100%;}
 .text-blue { color: #3b82f6; font-weight: bold;}
 .text-green { color: #10b981; }
+.full-width { width: 100%; }
 
 /* ======== SIDEBAR ======== */
 .sidebar { width: 280px; background: #0b1121; color: white; display: flex; flex-direction: column; z-index: 10; }
@@ -798,9 +746,7 @@ onUnmounted(() => {
 .upload-zone { border: 2px dashed #cbd5e1; border-radius: 16px; padding: 50px 20px; text-align: center; background: #f8fafc; cursor: pointer; transition: 0.3s;}
 .upload-zone:hover { border-color: #4f46e5; }
 .upload-zone.has-file { border: 2px solid #10b981; background: #ecfdf5; }
-.text-green { color: #10b981 !important; }
-.text-red { color: #ef4444 !important; }
-.btn-primary { display: flex; justify-content: center; align-items: center; background: #4f46e5; color: white; border: none; padding: 14px; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; width: 100%; transition: 0.3s;}
+.btn-primary { display: flex; justify-content: center; align-items: center; background: #4f46e5; color: white; border: none; padding: 14px; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: 0.3s;}
 .btn-primary:hover:not(:disabled) { background: #4338ca; transform: translateY(-2px);}
 .btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; transform: none;}
 .bg-danger { background: #ef4444 !important; }
@@ -851,7 +797,6 @@ onUnmounted(() => {
 .chat-actions .icon-btn { background: none; border: none; font-size: 1.2rem; color: #54656f; cursor: pointer; padding: 8px; margin-left: 10px; border-radius: 50%;}
 .chat-messages-area { flex: 1; padding: 30px 6%; overflow-y: auto; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: contain; background-repeat: repeat; display: flex; flex-direction: column; gap: 6px; scroll-behavior: smooth;}
 
-/* MTAMBO WA SCROLLBAR MPYA KUZUIA UKUBWA MBOVU */
 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
@@ -881,25 +826,23 @@ onUnmounted(() => {
 
 .loader-small { display: inline-block; border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid white; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
 
-/* Settings Lock */
-.settings-card { max-width: 600px; margin: 0 auto;}
-.alert-box { padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; font-size: 0.9rem; line-height: 1.4;}
-.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
-.warning { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
-.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-.small-hint { font-size: 0.8rem; font-style: italic;}
-
-.locked-box { border: 2px solid #e2e8f0; background: #f8fafc; padding: 30px; border-radius: 15px; text-align: center; }
-.lock-icon { font-size: 3rem; margin-bottom: 10px; }
-.locked-box h4 { color: #0f172a; margin-bottom: 10px; font-size: 1.2rem;}
-.locked-box p { font-size: 1rem; color: #334155; margin-bottom: 15px; background: white; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;}
-.lock-text { font-size: 0.85rem; color: #64748b; display: block;}
+/* ======== CSS MPYA YA MIPANGILIO (SETTINGS) ======== */
+.settings-card { max-width: 650px; margin: 0 auto; padding: 40px;}
+.locked-box { border: 1px solid #e2e8f0; background: #ffffff; padding: 30px; border-radius: 16px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.03); }
+.bg-warning-light { background: #fffbeb; border-color: #fde68a; }
+.text-warning-dark { color: #b45309; }
+.badge-live { display: inline-block; background: #ecfdf5; color: #059669; font-weight: 800; font-size: 0.85rem; padding: 6px 15px; border-radius: 20px; border: 1px solid #a7f3d0;}
+.api-detail-group { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px 20px; border-radius: 12px; display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
+.detail-label { font-size: 0.8rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;}
+.detail-value { font-size: 1.1rem; font-weight: 800;}
+.alert-box.info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+.text-left { text-align: left; }
 
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(10px); }
 
 /* ========================================================
-   📱 RESPONSIVENESS MPYA YA SIMU & TABLET (MOBILE UI)
+   📱 RESPONSIVENESS MPYA YA SIMU & TABLET
    ======================================================== */
 .back-btn-mobile { display: none; background: none; border: none; font-size: 1.5rem; margin-right: 10px; cursor: pointer; }
 
@@ -920,21 +863,14 @@ onUnmounted(() => {
   .grid-layout { grid-template-columns: 1fr; }
   
   .chat-layout { flex-direction: column; height: 80vh; }
-  
-  /* Kuhide sidebar kama upo ndani ya chat (kwenye simu) */
   .chat-sidebar.hide-on-mobile { display: none; }
   .chat-sidebar { width: 100%; height: 100%; border-right: none; }
-  
-  /* Kuonyesha main chat tu (kwenye simu) */
   .chat-main { display: none; width: 100%; height: 100%; }
   .chat-main.show-on-mobile { display: flex; }
   .chat-main.empty-mobile { display: none; }
   
-  .back-btn-mobile { display: block; } /* Kitufe cha kurudi nyuma kinaonekana sasa */
+  .back-btn-mobile { display: block; }
   .message-bubble { max-width: 85%; }
-  
-  .active-profile .avatar { width: 35px; height: 35px; font-size: 0.9rem;}
-  .details h4 { font-size: 0.9rem; }
-  .chat-input-area input { padding: 10px 15px; }
+  .settings-card { padding: 20px; }
 }
 </style>
