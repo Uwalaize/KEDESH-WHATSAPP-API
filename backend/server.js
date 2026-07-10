@@ -14,8 +14,7 @@ const { Server } = require('socket.io');
 
 const app = express();
 
-// 🔥 ULINZI KWA CLOUD HOSTING (Render, Heroku, n.k.) 🔥
-// Inaruhusu 'express-rate-limit' kusoma IP za wateja kwa usahihi nyuma ya proxy
+// 🔥 Kutatua kosa la X-Forwarded-For kwenye Render au Cloud Proxy 🔥
 app.set('trust proxy', 1);
 
 const server = http.createServer(app); 
@@ -171,8 +170,7 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
 
         let finalToken = codeOrToken;
 
-        // 🔥 LOGIC MPYA YA KIUSALAMA: Kubadili Code kuwa Access Token
-        // Token za Meta huanza na 'EAA', kwa hiyo kama ni fupi au haina EAA, tunajua ni 'Code'
+        // Kubadili Code kuwa Access Token kama ipo
         if (!codeOrToken.startsWith('EAA')) {
             console.log(`🔄 [META AUTH] Ninabadili Code iliyopokelewa kuwa Access Token...`);
             const tokenUrl = `https://graph.facebook.com/v20.0/oauth/access_token?client_id=${META_APP_ID}&client_secret=${META_APP_SECRET}&code=${codeOrToken}`;
@@ -187,20 +185,40 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
         let wabaId = null;
         let phoneId = null;
 
-        // 2. SAFE BLOCK: Tunavuta WABA ID na Phone ID kiotomatiki
+        // 2. SAFE BLOCK DUAL-CHECK: Tunatafuta WABA ID kiotomatiki (Wateja na Mmiliki)
         try {
-            const wabaRes = await axios.get(`https://graph.facebook.com/v20.0/me/client_whatsapp_business_accounts?access_token=${finalToken}`);
+            let wabaList = [];
             
-            if (wabaRes.data?.data?.length > 0) {
-                wabaId = wabaRes.data.data[0].id;
+            // Njia A: Tafuta WABA ID kama Mteja wa Nje (Client Account)
+            const clientRes = await axios.get(`https://graph.facebook.com/v20.0/me/client_whatsapp_business_accounts?access_token=${finalToken}`);
+            if (clientRes.data?.data?.length > 0) {
+                wabaList = clientRes.data.data;
+                console.log("✅ WABA imepatikana kupitia Mteja (Client Endpoint).");
+            } else {
+                // Njia B: Tafuta WABA ID kama Akaunti ya Ndani (Owner Account) - Inafanya kazi unapojitest
+                const directRes = await axios.get(`https://graph.facebook.com/v20.0/me/whatsapp_business_accounts?access_token=${finalToken}`);
+                if (directRes.data?.data?.length > 0) {
+                    wabaList = directRes.data.data;
+                    console.log("✅ WABA imepatikana kupitia Mmiliki (Direct Endpoint).");
+                }
+            }
+
+            if (wabaList.length > 0) {
+                wabaId = wabaList[0].id;
                 
+                // Vuta Phone ID ndani ya hiyo WABA
                 const phoneRes = await axios.get(`https://graph.facebook.com/v20.0/${wabaId}/phone_numbers?access_token=${finalToken}`);
                 if (phoneRes.data?.data?.length > 0) {
                     phoneId = phoneRes.data.data[0].id;
+                    console.log(`✅ Namba ya Simu imepatikana: ${phoneId}`);
+                } else {
+                    console.log("⚠️ WABA ipo, lakini namba ya simu haijakamilisha usajili kwa Meta.");
                 }
+            } else {
+                console.log("⚠️ WABA haijapatikana. Inawezekana mteja aliruka hatua kwenye Meta Wizard.");
             }
         } catch (metaErr) {
-            console.log(`⚠️ [META WARNING] Haijaweza kuvuta WABA ID kiotomatiki kwa ${fbUser.name}, lakini anaendelea kuingia.`);
+            console.log("⚠️ Hitilafu wakati wa kuvuta WABA:", metaErr.response?.data || metaErr.message);
         }
 
         // 3. Mtafute au Mtengeneze Mteja kwenye Kanzidata
@@ -220,17 +238,20 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
             });
             console.log(`\n🎉 [MTEJA MPYA SAAS (META)]`);
             console.log(`   ├─ Jina: ${business.businessName}`);
-            console.log(`   └─ WABA: ${wabaId || 'Haijapatikana'}\n`);
+            console.log(`   ├─ WABA: ${wabaId || 'Haijapatikana'}`);
+            console.log(`   └─ Phone ID: ${phoneId || 'Haijapatikana'}\n`);
         } else {
             business = await prisma.business.update({
                 where: { id: business.id },
                 data: { 
                     metaAccessToken: finalToken,
+                    // Tunaweka hizi data zilizopatikana (zinasaidia ku-update kama alirudia wizard)
                     ...(wabaId && { wabaId }),
                     ...(phoneId && { whatsappPhoneId: phoneId })
                 }
             });
             console.log(`🔓 [META LOGIN SUCCESS] -> ${business.businessName} ameingia ofisini.`);
+            console.log(`   └─ WABA yake: ${business.wabaId || 'Haijapatikana'}`);
         }
 
         const token = jwt.sign({ businessId: business.id }, JWT_SECRET, { expiresIn: '7d' });
