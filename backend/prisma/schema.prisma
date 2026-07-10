@@ -13,14 +13,20 @@ datasource db {
 model Business {
   id               String     @id @default(uuid())
   businessName     String
-  fullName         String     // Imeongezwa kuendana na Fomu ya Usajili
-  phone            String     @unique // Imebadilishwa kutoka 'email' ili ku-login kwa namba
-  password         String
+  fullName         String     
   
-  // Taarifa za WhatsApp API kutoka Meta (Mteja ataweka akiwa kwenye Dashboard)
-  whatsappPhoneId  String?    
+  // Imekuwa optional (String?) kuruhusu wanaosajili kwa Facebook
+  phone            String?    @unique 
+  password         String?    
+  
+  // 🔥 TAARIFA MPYA ZA FACEBOOK / META AUTH
+  facebookId       String?    @unique 
+  wabaId           String?    // WhatsApp Business Account ID
+  
+  // Taarifa za WhatsApp API kutoka Meta
+  whatsappPhoneId  String?
   metaAccessToken  String?    
-  walletBalance    Float      @default(0.0) // Salio la kutuma Bulk SMS
+  walletBalance    Float      @default(0.0) 
   
   contacts         Contact[]
   messages         Message[]
