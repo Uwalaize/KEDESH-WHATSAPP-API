@@ -184,48 +184,70 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
 
         let wabaId = null;
         let phoneId = null;
-        let wabaList = [];
 
-        // 2A: TAFUTA KAMA MTEJA WA NJE (CLIENT)
+        // 2A: TAFUTA WABA ID KUPITIA DEBUG TOKEN (Njia sahihi zaidi ya Meta API v20.0)
         try {
-            const clientRes = await axios.get(`https://graph.facebook.com/v20.0/me/client_whatsapp_business_accounts?access_token=${finalToken}`);
-            if (clientRes.data?.data?.length > 0) {
-                wabaList = clientRes.data.data;
-                console.log("✅ WABA imepatikana kupitia Mteja (Client Endpoint).");
+            console.log("🔍 [META] Natafuta WABA ID kupitia Debug Token...");
+            // Tunatumia | iliyo-encoded kama %7C kwa usalama wa URL
+            const debugUrl = `https://graph.facebook.com/v20.0/debug_token?input_token=${finalToken}&access_token=${META_APP_ID}%7C${META_APP_SECRET}`;
+            const debugRes = await axios.get(debugUrl);
+            const scopes = debugRes.data?.data?.granular_scopes || [];
+            
+            const wabaScope = scopes.find(s => s.scope === 'whatsapp_business_management' || s.scope === 'whatsapp_business_messaging');
+            if (wabaScope && wabaScope.target_ids?.length > 0) {
+                wabaId = wabaScope.target_ids[0];
+                console.log(`✅ WABA ID Imepatikana kupitia Debug Token: ${wabaId}`);
+            } else {
+                console.log("⚠️ Debug Token haikuonyesha 'target_ids' za WABA.");
             }
-        } catch (e) {
-            console.log("⚠️ Njia ya Client (Mteja) haijarudisha WABA, inajaribu njia ya Mmiliki...");
+        } catch(e) {
+            console.log("⚠️ Imeshindwa kusoma Debug Token:", e.response?.data || e.message);
         }
 
-        // 2B: TAFUTA KAMA MMILIKI WA APP (OWNER) - KAMA NJIA YA KWANZA IMEKOSA
-        if (wabaList.length === 0) {
+        // 2B: KAMA DEBUG TOKEN IMEKOSA, TAFUTA KUPITIA BUSINESS ID (Njia Mbadala)
+        if (!wabaId) {
             try {
-                const directRes = await axios.get(`https://graph.facebook.com/v20.0/me/whatsapp_business_accounts?access_token=${finalToken}`);
-                if (directRes.data?.data?.length > 0) {
-                    wabaList = directRes.data.data;
-                    console.log("✅ WABA imepatikana kupitia Mmiliki (Direct Endpoint).");
+                console.log("🔍 [META] Natafuta WABA ID kupitia Business Profile...");
+                const bizRes = await axios.get(`https://graph.facebook.com/v20.0/me/businesses?access_token=${finalToken}`);
+                const businesses = bizRes.data?.data || [];
+                
+                for (let b of businesses) {
+                    try {
+                        const wabaRes = await axios.get(`https://graph.facebook.com/v20.0/${b.id}/owned_whatsapp_business_accounts?access_token=${finalToken}`);
+                        if (wabaRes.data?.data?.length > 0) {
+                            wabaId = wabaRes.data.data[0].id;
+                            console.log(`✅ WABA ID Imepatikana kupitia Business (${b.name}): ${wabaId}`);
+                            break;
+                        }
+
+                        const clientWabaRes = await axios.get(`https://graph.facebook.com/v20.0/${b.id}/client_whatsapp_business_accounts?access_token=${finalToken}`);
+                        if (clientWabaRes.data?.data?.length > 0) {
+                            wabaId = clientWabaRes.data.data[0].id;
+                            console.log(`✅ WABA ID Imepatikana kupitia Client Business (${b.name}): ${wabaId}`);
+                            break;
+                        }
+                    } catch(err) { /* Endelea na biashara inayofuata */ }
                 }
-            } catch (e) {
-                console.log("⚠️ Njia ya Mmiliki pia haijarudisha WABA.");
+            } catch(e) {
+                console.log("⚠️ Imeshindwa kusoma Business Profile.");
             }
         }
 
-        // 2C: KAMA WABA IMEPATIKANA POPOTE PALE, VUTA PHONE ID
-        if (wabaList.length > 0) {
-            wabaId = wabaList[0].id;
+        // 2C: VUTA PHONE ID KAMA TUNA WABA ID
+        if (wabaId) {
             try {
                 const phoneRes = await axios.get(`https://graph.facebook.com/v20.0/${wabaId}/phone_numbers?access_token=${finalToken}`);
                 if (phoneRes.data?.data?.length > 0) {
                     phoneId = phoneRes.data.data[0].id;
-                    console.log(`✅ Namba ya Simu imepatikana: ${phoneId}`);
+                    console.log(`✅ Namba ya Simu (Phone ID) imepatikana: ${phoneId}`);
                 } else {
-                    console.log("⚠️ WABA ipo, lakini namba ya simu haijakamilisha usajili kwa Meta.");
+                    console.log("⚠️ WABA ipo, lakini Namba ya Simu haijapatikana.");
                 }
-            } catch (e) {
+            } catch(e) {
                 console.log("⚠️ Hitilafu kuvuta Namba ya Simu kutoka kwenye WABA.");
             }
         } else {
-            console.log("⚠️ WABA haijapatikana kabisa. Inawezekana mteja aliruka hatua kwenye Meta Wizard.");
+            console.log("❌ WABA ID haijapatikana kabisa. Mteja aliruka hatua au Meta imekataa.");
         }
 
         // 3. Mtafute au Mtengeneze Mteja kwenye Kanzidata
@@ -252,12 +274,14 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
                 where: { id: business.id },
                 data: { 
                     metaAccessToken: finalToken,
+                    // Hifadhi ID mpya zilizopatikana (kama zipo)
                     ...(wabaId && { wabaId }),
                     ...(phoneId && { whatsappPhoneId: phoneId })
                 }
             });
             console.log(`🔓 [META LOGIN SUCCESS] -> ${business.businessName} ameingia ofisini.`);
             console.log(`   └─ WABA yake: ${business.wabaId || 'Haijapatikana'}`);
+            console.log(`   └─ Phone ID: ${business.whatsappPhoneId || 'Haijapatikana'}`);
         }
 
         const token = jwt.sign({ businessId: business.id }, JWT_SECRET, { expiresIn: '7d' });
