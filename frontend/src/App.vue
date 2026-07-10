@@ -305,7 +305,7 @@ const currentUser = ref(null);
 const isLogin = ref(true);
 const step = ref(1);
 const isLoading = ref(false);
-const isFacebookAuth = ref(false); // Kusaidia loader kujua inazunguka wapi
+const isFacebookAuth = ref(false); 
 const justRegistered = ref(false);
 const passError = ref(false);
 const authError = ref('');
@@ -363,10 +363,10 @@ const loginWithFacebook = () => {
     return;
   }
 
-  // TUNAITA DIRISHA KWA KUTUMIA CONFIGURATION ID MPYA YA WABA
+  // TUNAITA DIRISHA LA WHATSAPP EMBEDDED SIGNUP WIZARD
   window.FB.login((response) => {
     if (response.authResponse) {
-      // 🔥 MPYA: Hapa sasa tunadaka CODE badala ya Access Token ya kawaida
+      // Tunadaka CODE badala ya Access Token ya kawaida
       const code = response.authResponse.code || response.authResponse.accessToken;
       processFacebookAuth(code);
     } else {
@@ -376,8 +376,13 @@ const loginWithFacebook = () => {
     }
   }, {
     config_id: '1550680676648524',
-    response_type: 'code', // 🔥 HII NDIO INAONDOA ILE ERROR NYEKUNDU
-    override_default_response_type: true
+    response_type: 'code', 
+    override_default_response_type: true,
+    // 🔥 HAPA TUNAILAZIMISHA META IFUNGUE WHATSAPP WIZARD YENYE KUULIZA NAMBA 🔥
+    extras: {
+      feature: 'whatsapp_embedded_signup',
+      setup: {}
+    }
   });
 };
 
