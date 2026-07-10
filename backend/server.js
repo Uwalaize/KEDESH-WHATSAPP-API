@@ -13,6 +13,10 @@ const http = require('http');
 const { Server } = require('socket.io');
 
 const app = express();
+
+// 🔥 MPYA: Kutatua kosa la X-Forwarded-For kwenye Render au Cloud Proxy 🔥
+app.set('trust proxy', 1);
+
 const server = http.createServer(app); 
 
 const io = new Server(server, {
@@ -161,27 +165,11 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
         const { accessToken } = req.body;
         if (!accessToken) return res.status(400).json({ success: false, error: "Access Token inahitajika." });
 
-        // 1. Vuta taarifa za mtumiaji toka Facebook
+        // 1. Vuta taarifa za msingi za mtumiaji toka Facebook
         const fbUserRes = await axios.get(`https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`);
         const fbUser = fbUserRes.data;
 
-        // 2. Vuta WhatsApp Business Accounts (WABA) zilizounganishwa
-        const wabaRes = await axios.get(`https://graph.facebook.com/v20.0/me/client_whatsapp_business_accounts?access_token=${accessToken}`);
-        
-        let wabaId = null;
-        let phoneId = null;
-
-        if (wabaRes.data?.data?.length > 0) {
-            wabaId = wabaRes.data.data[0].id;
-            
-            // 3. Vuta Phone IDs kutoka kwenye hiyo WABA
-            const phoneRes = await axios.get(`https://graph.facebook.com/v20.0/${wabaId}/phone_numbers?access_token=${accessToken}`);
-            if (phoneRes.data?.data?.length > 0) {
-                phoneId = phoneRes.data.data[0].id;
-            }
-        }
-
-        // 4. Mtafute au Mtengeneze Mteja
+        // 2. Mtafute au Mtengeneze Mteja kwenye Kanzidata
         let business = await prisma.business.findUnique({ where: { facebookId: fbUser.id } });
 
         if (!business) {
@@ -191,20 +179,14 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
                     fullName: fbUser.name,
                     facebookId: fbUser.id,
                     metaAccessToken: accessToken,
-                    wabaId: wabaId,
-                    whatsappPhoneId: phoneId,
                     walletBalance: 0.0
                 }
             });
-            console.log(`\n🎊 [MTEJA MPYA SAAS (META)] -> Jina: ${business.businessName} | WABA: ${wabaId || 'Hakuna'}`);
+            console.log(`\n🎊 [MTEJA MPYA SAAS (META)] -> Jina: ${business.businessName}`);
         } else {
             business = await prisma.business.update({
                 where: { id: business.id },
-                data: { 
-                    metaAccessToken: accessToken,
-                    ...(wabaId && { wabaId }),
-                    ...(phoneId && { whatsappPhoneId: phoneId })
-                }
+                data: { metaAccessToken: accessToken }
             });
             console.log(`🔓 [META LOGIN SUCCESS] -> ${business.businessName} ameingia.`);
         }
