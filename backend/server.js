@@ -184,29 +184,36 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
 
         let wabaId = null;
         let phoneId = null;
+        let wabaList = [];
 
-        // 2. SAFE BLOCK DUAL-CHECK: Tunatafuta WABA ID kiotomatiki (Wateja na Mmiliki)
+        // 2A: TAFUTA KAMA MTEJA WA NJE (CLIENT)
         try {
-            let wabaList = [];
-            
-            // Njia A: Tafuta WABA ID kama Mteja wa Nje (Client Account)
             const clientRes = await axios.get(`https://graph.facebook.com/v20.0/me/client_whatsapp_business_accounts?access_token=${finalToken}`);
             if (clientRes.data?.data?.length > 0) {
                 wabaList = clientRes.data.data;
                 console.log("✅ WABA imepatikana kupitia Mteja (Client Endpoint).");
-            } else {
-                // Njia B: Tafuta WABA ID kama Akaunti ya Ndani (Owner Account) - Inafanya kazi unapojitest
+            }
+        } catch (e) {
+            console.log("⚠️ Njia ya Client (Mteja) haijarudisha WABA, inajaribu njia ya Mmiliki...");
+        }
+
+        // 2B: TAFUTA KAMA MMILIKI WA APP (OWNER) - KAMA NJIA YA KWANZA IMEKOSA
+        if (wabaList.length === 0) {
+            try {
                 const directRes = await axios.get(`https://graph.facebook.com/v20.0/me/whatsapp_business_accounts?access_token=${finalToken}`);
                 if (directRes.data?.data?.length > 0) {
                     wabaList = directRes.data.data;
                     console.log("✅ WABA imepatikana kupitia Mmiliki (Direct Endpoint).");
                 }
+            } catch (e) {
+                console.log("⚠️ Njia ya Mmiliki pia haijarudisha WABA.");
             }
+        }
 
-            if (wabaList.length > 0) {
-                wabaId = wabaList[0].id;
-                
-                // Vuta Phone ID ndani ya hiyo WABA
+        // 2C: KAMA WABA IMEPATIKANA POPOTE PALE, VUTA PHONE ID
+        if (wabaList.length > 0) {
+            wabaId = wabaList[0].id;
+            try {
                 const phoneRes = await axios.get(`https://graph.facebook.com/v20.0/${wabaId}/phone_numbers?access_token=${finalToken}`);
                 if (phoneRes.data?.data?.length > 0) {
                     phoneId = phoneRes.data.data[0].id;
@@ -214,11 +221,11 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
                 } else {
                     console.log("⚠️ WABA ipo, lakini namba ya simu haijakamilisha usajili kwa Meta.");
                 }
-            } else {
-                console.log("⚠️ WABA haijapatikana. Inawezekana mteja aliruka hatua kwenye Meta Wizard.");
+            } catch (e) {
+                console.log("⚠️ Hitilafu kuvuta Namba ya Simu kutoka kwenye WABA.");
             }
-        } catch (metaErr) {
-            console.log("⚠️ Hitilafu wakati wa kuvuta WABA:", metaErr.response?.data || metaErr.message);
+        } else {
+            console.log("⚠️ WABA haijapatikana kabisa. Inawezekana mteja aliruka hatua kwenye Meta Wizard.");
         }
 
         // 3. Mtafute au Mtengeneze Mteja kwenye Kanzidata
@@ -245,7 +252,6 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
                 where: { id: business.id },
                 data: { 
                     metaAccessToken: finalToken,
-                    // Tunaweka hizi data zilizopatikana (zinasaidia ku-update kama alirudia wizard)
                     ...(wabaId && { wabaId }),
                     ...(phoneId && { whatsappPhoneId: phoneId })
                 }
