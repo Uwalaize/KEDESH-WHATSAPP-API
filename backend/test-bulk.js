@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 // 1. WEKA TAARIFA ZAKO HAPA CHINI
-const PHONE_ID = "1211226958737656"; // Hii ni Phone ID yako niliyoitoa kwenye picha yako!
+const PHONE_ID = "1181351505062037"; // Hii ni Phone ID yako niliyoitoa kwenye picha yako!
 const TOKEN = "EAAMOgZBQYz1oBRuW4ch4Y7sC9HOsyYD3nsPuwVbTlF7tyO24oag1ZBv2E8t3QPbSUT7AZAgntK3ZCYkLFEb4ZAtpRjx3631LL9N2Br0xxN1bOWZAZCKdZAF4ZBTpW0A3bfacTYzUcgPMPKocppKu715xfevUWZByjNztdaEBYnJ0S7pAsYmbOSo3p6Xpmjcs7aDwZDZD"; // Futa haya maneno, paste ile Token yako ndefu ya kudumu
 const PIN = "434359"; // Chagua PIN yoyote ya tarakimu 6 (Mfano: 123456) - Ikariri usiisahau.
 

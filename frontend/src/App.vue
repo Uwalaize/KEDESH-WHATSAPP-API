@@ -76,37 +76,6 @@
                   <h3>1. Utangulizi</h3>
                   <p>Kedesh Limited ("sisi", "yetu") inamiliki na kuendesha mfumo wa Kedesh Bulk SMS. Tunathamini faragha yako na tumejitolea kulinda taarifa zako binafsi na za kibiashara. Sera hii inaeleza jinsi tunavyokusanya, kutumia, na kulinda data zako unapotumia mfumo wetu kupitia Facebook Login na WhatsApp Business API.</p>
                 </div>
-
-                <div class="p-section">
-                  <h3>2. Taarifa Tunazokusanya</h3>
-                  <p>Tunapokuunganisha na mfumo wetu, tunakusanya taarifa zifuatazo kwa idhini yako:</p>
-                  <ul>
-                    <li><strong>Taarifa za Profaili:</strong> Jina lako na barua pepe (Email) kutoka kwenye akaunti yako ya Facebook/Meta.</li>
-                    <li><strong>Taarifa za Utendaji:</strong> Access Tokens, na Phone Number ID zinazotuwezesha kuunganisha mfumo wetu na akaunti yako ya WhatsApp Business.</li>
-                    <li><strong>Data za Wateja Wako:</strong> Namba za simu unazoziweka kwenye mfumo kwa ajili ya kutuma meseji (Bulk SMS).</li>
-                  </ul>
-                </div>
-
-                <div class="p-section">
-                  <h3>3. Jinsi Tunavyotumia Taarifa Zako</h3>
-                  <p>Taarifa tunazokusanya zinatumika kwa malengo mahususi yafuatayo:</p>
-                  <ul>
-                    <li>Kuthibitisha utambulisho wako na kulinda akaunti yako.</li>
-                    <li>Kuwezesha utumaji wa ujumbe kwa wateja wako kupitia API rasmi ya Meta.</li>
-                    <li>Kukupa ripoti na takwimu za uwasilishaji wa meseji zako.</li>
-                  </ul>
-                </div>
-
-                <div class="p-section">
-                  <h3>4. Ushirikiano na Wengine (Data Sharing)</h3>
-                  <p>Kedesh Limited haiuzi, haigawi, wala haishiriki taarifa zako na makampuni mengine ya kibiashara. Taarifa zako zinashirikiwa tu na Meta Platforms, Inc. kwa lengo moja tu la kufanikisha utumaji wa ujumbe (WhatsApp API). Tunazingatia sheria zote za ulinzi wa data.</p>
-                </div>
-
-                <div class="p-section">
-                  <h3>5. Kufuta Taarifa Zako (Data Deletion Policy)</h3>
-                  <p>Wewe ndiye mmiliki wa data zako. Ikiwa unataka kusitisha matumizi ya mfumo wetu na kufuta taarifa zako zote (pamoja na Access Tokens na orodha ya wateja wako) kutoka kwenye kanzidata (database) yetu, una haki ya kufanya hivyo. Tafadhali wasiliana nasi kupitia barua pepe yetu, na tutafuta taarifa zako zote ndani ya masaa 24.</p>
-                </div>
-
                 <div class="p-section">
                   <h3>6. Mawasiliano</h3>
                   <p>Kama una swali lolote, changamoto, au unahitaji msaada kuhusu Sera hii ya Faragha au ulinzi wa data zako, tafadhali wasiliana nasi kupitia:</p>
@@ -128,7 +97,7 @@
               <div class="form-header">
                 <div class="header-icon">👋</div>
                 <h2>Karibu KEDESH SaaS</h2>
-                <p>Tafadhali ingiza taarifa zako kwa usalama kuingia ofisini.</p>
+                <p>Unganisha biashara yako moja kwa moja kupitia Meta au ingia na namba yako.</p>
               </div>
               
               <transition name="slide-down">
@@ -141,6 +110,20 @@
                   <span class="a-icon">🔒</span> {{ authError }}
                 </div>
               </transition>
+
+              <div class="facebook-auth-section">
+                <button @click="loginWithFacebook" type="button" class="btn-facebook" :disabled="isLoading">
+                  <span v-if="isLoading && isFacebookAuth" class="loader"></span>
+                  <span v-else class="fb-content">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2.04c-5.5 0-10 4.48-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 0 0 8.44-9.9c0-5.54-4.5-10.02-10-10.02Z"/></svg>
+                    Endelea na Facebook (Meta)
+                  </span>
+                </button>
+                
+                <div class="divider">
+                  <span>AU INGIA KWA NAMBA</span>
+                </div>
+              </div>
 
               <form @submit.prevent="handleLogin" class="auth-form">
                 <div class="input-group">
@@ -166,7 +149,7 @@
                 </div>
                 
                 <button type="submit" class="btn-primary mt-5" :disabled="isLoading">
-                  <span v-if="isLoading" class="loader"></span>
+                  <span v-if="isLoading && !isFacebookAuth" class="loader"></span>
                   <span v-else>Ingia Kwenye Akaunti &rarr;</span>
                 </button>
               </form>
@@ -176,7 +159,7 @@
                 <button @click="toggleMode" class="btn-text-outline">Fungua Akaunti Yako Hapa</button>
                 
                 <div class="mobile-privacy-link mt-4">
-                  <a href="?privacy=true" @click.prevent="openPrivacy" class="m-link">🛡️ Soma Sera ya Faragha (Privacy Policy)</a>
+                  <a href="?privacy=true" @click.prevent="openPrivacy" class="m-link">🛡️ Soma Sera ya Faragha</a>
                 </div>
               </div>
             </div>
@@ -281,7 +264,7 @@
                 <button @click="toggleMode" class="btn-text">Ingia Kwenye Mfumo &rarr;</button>
                 
                 <div class="mobile-privacy-link mt-4">
-                  <a href="?privacy=true" @click.prevent="openPrivacy" class="m-link">🛡️ Soma Sera ya Faragha (Privacy Policy)</a>
+                  <a href="?privacy=true" @click.prevent="openPrivacy" class="m-link">🛡️ Soma Sera ya Faragha</a>
                 </div>
               </div>
             </div>
@@ -297,8 +280,6 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import axios from 'axios';
-
-// 🔥 HAPA TUNAVUTA DASHBOARD YAKO NZURI TOKA COMPONENTS FOLDER!
 import Dashboard from './components/Dashboard.vue';
 
 const API_URL = 'https://kedesh-whatsapp-api.onrender.com/api/auth';
@@ -324,29 +305,25 @@ const currentUser = ref(null);
 const isLogin = ref(true);
 const step = ref(1);
 const isLoading = ref(false);
+const isFacebookAuth = ref(false); // Kusaidia loader kujua inazunguka wapi
 const justRegistered = ref(false);
 const passError = ref(false);
 const authError = ref('');
 
-// 🛡️ STATE YA PRIVACY POLICY
 const showPrivacy = ref(false);
 
-// 🔥 MTAMBO WA KUSOMA URL KWA AJILI YA META REVIEWERS 🔥
 onMounted(() => {
   const urlParams = new URLSearchParams(window.location.search);
-  // Kama Meta wakitumia link yenye ?privacy=true au #privacy, tunafungua ukurasa wa sera moja kwa moja
   if (urlParams.get('privacy') === 'true' || window.location.hash.includes('privacy')) {
     showPrivacy.value = true;
   }
 });
 
-// Kufungua Privacy na ku-update URL kiasili (bila kurefresh kioo)
 const openPrivacy = () => {
   showPrivacy.value = true;
   window.history.pushState({}, '', '?privacy=true');
 };
 
-// Kufunga Privacy na kusafisha URL irudi kawaida
 const closePrivacy = () => {
   showPrivacy.value = false;
   window.history.pushState({}, '', window.location.pathname);
@@ -362,8 +339,9 @@ const toggleMode = () => {
   step.value = 1; 
   authError.value = ''; 
   justRegistered.value = false; 
-  closePrivacy(); // Funga sera kama ipo wazi
+  closePrivacy(); 
 };
+
 const prevStep = () => { if (step.value > 1) step.value--; };
 const nextStep = () => {
   authError.value = '';
@@ -372,8 +350,60 @@ const nextStep = () => {
   if (step.value < 3) step.value++;
 };
 
+// 🔥 FACEBOOK AUTHENTICATION LOGIC 🔥
+const loginWithFacebook = () => {
+  isLoading.value = true;
+  isFacebookAuth.value = true;
+  authError.value = '';
+
+  if (!window.FB) {
+    isLoading.value = false;
+    isFacebookAuth.value = false;
+    authError.value = "Mfumo wa Meta haujakamilika kufunguka. Tafadhali refresh ukurasa.";
+    return;
+  }
+
+  window.FB.login((response) => {
+    if (response.authResponse) {
+      const accessToken = response.authResponse.accessToken;
+      processFacebookAuth(accessToken);
+    } else {
+      isLoading.value = false;
+      isFacebookAuth.value = false;
+      authError.value = "Umesitisha zoezi la kuunganisha akaunti yako ya Facebook.";
+    }
+  }, {
+    scope: 'business_management,whatsapp_business_management,whatsapp_business_messaging',
+    return_scopes: true
+  });
+};
+
+const processFacebookAuth = async (token) => {
+  try {
+    const res = await axios.post(`${API_URL}/facebook-login`, { accessToken: token });
+    
+    if(res.data.success) {
+      localStorage.setItem('msamba_token', res.data.token);
+      currentUser.value = res.data.user; 
+      
+      isLoading.value = false;
+      isFacebookAuth.value = false;
+      isRedirecting.value = true; 
+      
+      setTimeout(() => {
+        isRedirecting.value = false;
+        isAuthenticated.value = true; 
+      }, 2500);
+    }
+  } catch (error) {
+    isLoading.value = false;
+    isFacebookAuth.value = false;
+    authError.value = error.response?.data?.error || "Kuna shida imejitokeza kuunganisha mfumo na Meta. Tafadhali jaribu tena.";
+  }
+};
+
 const completeRegistration = async () => {
-  isLoading.value = true; authError.value = '';
+  isLoading.value = true; isFacebookAuth.value = false; authError.value = '';
   try {
     const fullPhone = formatPhone(regForm.countryCode, regForm.phone);
     await axios.post(`${API_URL}/register`, {
@@ -388,7 +418,7 @@ const completeRegistration = async () => {
 };
 
 const handleLogin = async () => {
-  isLoading.value = true; authError.value = '';
+  isLoading.value = true; isFacebookAuth.value = false; authError.value = '';
   try {
     const fullPhone = formatPhone(loginForm.countryCode, loginForm.phone);
     const res = await axios.post(`${API_URL}/login`, { phone: fullPhone, password: loginForm.password });
@@ -427,7 +457,6 @@ const logout = () => {
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
 
-/* PAZIA LA MPITO */
 .redirect-screen { display: flex; height: 100vh; width: 100vw; background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); justify-content: center; align-items: center; color: white;}
 .redirect-content { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 450px; padding: 20px;}
 .success-check { font-size: 5rem; margin-bottom: 20px; animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;}
@@ -443,30 +472,11 @@ const logout = () => {
 .page-fade-enter-from { opacity: 0; transform: scale(0.98); }
 .page-fade-leave-to { opacity: 0; transform: scale(1.02); }
 
-/* ==========================================================================
-   SULUHISHO LA RESPONSIVENESS KWA SIMU NA TABLET
-========================================================================== */
-.auth-container { 
-  display: flex; 
-  /* TUMEONDOA overflow: hidden NA KUWEKA min-height: 100vh ILI IRUHUSU SCROLLING KWA SIMU */
-  min-height: 100vh; 
-  width: 100vw; 
-  background: #f0f4f8; 
-  overflow-x: hidden;
-}
+.auth-container { display: flex; min-height: 100vh; width: 100vw; background: #f0f4f8; overflow-x: hidden; }
 
-.brand-side { 
-  flex: 1; background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); 
-  color: white; padding: 4rem; position: relative; display: flex; 
-  flex-direction: column; justify-content: center; overflow: hidden;
-}
+.brand-side { flex: 1; background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); color: white; padding: 4rem; position: relative; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+.form-side { flex: 1.3; display: flex; align-items: center; justify-content: center; background: #ffffff; padding: 2rem; position: relative; }
 
-.form-side { 
-  flex: 1.3; display: flex; align-items: center; justify-content: center; 
-  background: #ffffff; padding: 2rem; position: relative;
-}
-
-/* KADI INAPANUKA KAMA NI PRIVACY POLICY LAKINI INAFIT VIZURI */
 .form-wrapper { width: 100%; max-width: 440px; transition: max-width 0.4s ease; margin: 0 auto; } 
 .wide-wrapper { max-width: 700px; } 
 
@@ -496,9 +506,16 @@ const logout = () => {
 .form-header h2 { font-size: 1.8rem; font-weight: 800; color: #0f172a; margin-bottom: 5px; }
 .form-header p { color: #64748b; font-size: 0.95rem; }
 
-/* ==========================================================================
-   📜 KADI YA SERA YA FARAGHA (PRIVACY POLICY) 📜
-========================================================================== */
+/* 🔥 FACEBOOK BUTTON STYLES 🔥 */
+.facebook-auth-section { margin-bottom: 1.5rem; width: 100%; }
+.btn-facebook { width: 100%; background: #1877F2; color: white; padding: 16px; border-radius: 12px; border: none; font-size: 1.05rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(24, 119, 242, 0.3); transition: all 0.3s ease; display: flex; justify-content: center; align-items: center; }
+.btn-facebook:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(24, 119, 242, 0.4); background: #166fe5; }
+.fb-content { display: flex; align-items: center; gap: 10px; }
+.divider { display: flex; align-items: center; text-align: center; margin: 1.5rem 0; color: #94a3b8; font-size: 0.85rem; font-weight: 700; }
+.divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #e2e8f0; }
+.divider span { padding: 0 15px; }
+
+/* PRIVACY POLICY */
 .privacy-card { padding: 2.5rem 3rem !important; display: flex; flex-direction: column; max-height: 85vh; }
 .privacy-header { border-bottom: 1px solid #e2e8f0; padding-bottom: 1.5rem; margin-bottom: 1.5rem; text-align: center; flex-shrink: 0;}
 .privacy-header h2 { font-size: 1.6rem; color: #0f172a; font-weight: 800; margin: 10px 0 5px 0;}
@@ -510,13 +527,13 @@ const logout = () => {
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 .p-section { margin-bottom: 1.8rem; }
 .p-section h3 { font-size: 1.1rem; color: #0f172a; margin-bottom: 10px; font-weight: 800; }
-.p-section p { font-size: 0.95rem; color: #475569; line-height: 1.7; margin-bottom: 10px;}
-.p-section ul { padding-left: 20px; color: #475569; font-size: 0.95rem; line-height: 1.7;}
+.p-section p, .p-section ul { font-size: 0.95rem; color: #475569; line-height: 1.7; margin-bottom: 10px;}
+.p-section ul { padding-left: 20px; }
 .p-section li { margin-bottom: 8px; }
 .contact-box { background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px dashed #cbd5e1; margin-top: 10px;}
 .w-100 { width: 100%; justify-content: center; }
 
-/* KODI ZA FORMU ZA KAWAIDA */
+/* FORMS & ALERTS */
 .alert-box { padding: 14px 16px; border-radius: 12px; margin-bottom: 20px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
 .success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
 .error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
@@ -581,40 +598,19 @@ button { cursor: pointer; border-radius: 12px; font-size: 1.05rem; font-weight: 
 .slide-left-enter-from { opacity: 0; transform: translateX(30px); }
 .slide-left-leave-to { opacity: 0; transform: translateX(-30px); }
 
-/* ==========================================================================
-   📱 MEDIA QUERIES KWA AJILI YA RESPONSIVENESS YA SIMU NA TABLET 📱
-========================================================================== */
 .mobile-privacy-link { display: none; margin-top: 15px; font-size: 0.95rem; }
 .mobile-privacy-link a { color: #4f46e5; text-decoration: underline; font-weight: 700;}
 
 @media (max-width: 992px) {
-  .auth-container { 
-    flex-direction: column; 
-    height: auto; 
-    /* HAPA NDIPO TATIZO LILIPOTATULIWA (Inaruhusu kuscroll kwenye simu) */
-    overflow-y: auto; 
-  }
-  
-  .brand-side { 
-    padding: 3rem 1.5rem; 
-    flex: none; 
-    text-align: center; 
-    align-items: center; 
-  }
-  
-  .desktop-only { display: none; } /* Inaficha link za Footer ya kompyuta kwenye simu */
-  .mobile-privacy-link { display: block; } /* Inaonyesha link mpya ya Faragha chini ya fomu kwenye simu */
-  
+  .auth-container { flex-direction: column; height: auto; overflow-y: auto; }
+  .brand-side { padding: 3rem 1.5rem; flex: none; text-align: center; align-items: center; }
+  .desktop-only { display: none; } 
+  .mobile-privacy-link { display: block; } 
   .hero-title { font-size: 2.2rem; }
   .subtitle { max-width: 100%; font-size: 1rem; margin-bottom: 1.5rem;}
-  
-  .form-side { 
-    padding: 2rem 1rem; 
-    align-items: flex-start; /* Inaruhusu Form kukaa vizuri juu na kupumua */
-  }
-  
+  .form-side { padding: 2rem 1rem; align-items: flex-start; }
   .glass-card { padding: 2rem 1.5rem; margin-bottom: 2rem; width: 100%;}
-  .privacy-card { padding: 1.5rem !important; max-height: none; } /* Inaruhusu Privacy Policy kushuka mpaka chini sana kwenye simu */
+  .privacy-card { padding: 1.5rem !important; max-height: none; } 
   .wide-wrapper { max-width: 100%; }
 }
 
@@ -624,7 +620,7 @@ button { cursor: pointer; border-radius: 12px; font-size: 1.05rem; font-weight: 
   .form-header h2 { font-size: 1.4rem; }
   .country-select { max-width: 90px; padding-left: 5px; font-size: 0.85rem;}
   .modern-input { font-size: 0.95rem; padding-left: 5px;}
-  .action-buttons { flex-direction: column; } /* Kwenye simu ndogo sana, vifungo vikae kimoja chini ya kingine */
+  .action-buttons { flex-direction: column; } 
   .btn-primary, .btn-secondary, .btn-success, .btn-text-outline { width: 100%; padding: 14px; font-size: 0.95rem;}
 }
 </style>
