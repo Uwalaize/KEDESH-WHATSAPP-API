@@ -14,7 +14,8 @@ const { Server } = require('socket.io');
 
 const app = express();
 
-// 🔥 MPYA: Kutatua kosa la X-Forwarded-For kwenye Render au Cloud Proxy 🔥
+// 🔥 ULINZI KWA CLOUD HOSTING (Render, Heroku, n.k.) 🔥
+// Inaruhusu 'express-rate-limit' kusoma IP za wateja kwa usahihi nyuma ya proxy
 app.set('trust proxy', 1);
 
 const server = http.createServer(app); 
@@ -32,11 +33,15 @@ const prisma = new PrismaClient();
 const BULK_SMS_COST = 84;   // Makato kwa Bulk SMS
 const LIVE_CHAT_COST = 30;  // Makato kwa Live Chat
 
-const { META_VERIFY_TOKEN, META_ACCESS_TOKEN } = process.env;
+// Tunavuta funguo zote muhimu kutoka kwenye .env
+const { META_VERIFY_TOKEN, META_ACCESS_TOKEN, META_APP_ID, META_APP_SECRET } = process.env;
 const JWT_SECRET = process.env.JWT_SECRET || "KEDESH_LIMITED_PREMIUM_SECRET_2026"; 
 
-if (!META_VERIFY_TOKEN || !META_ACCESS_TOKEN) {
-    console.error("🚨 [KOSA KUBWA] Funguo za Meta (Token) hazijakamilika kwenye .env");
+// ULINZI: Tunazuia Server isiwake kama funguo za Meta hazijakamilika
+if (!META_VERIFY_TOKEN || !META_ACCESS_TOKEN || !META_APP_ID || !META_APP_SECRET) {
+    console.error("\n🚨 [KOSA KUBWA LAKIUSALAMA] 🚨");
+    console.error("Server imeshindwa kuwaka. Funguo za Meta (Tokens au App Secrets) hazijakamilika kwenye .env");
+    console.error("Tafadhali weka META_VERIFY_TOKEN, META_ACCESS_TOKEN, META_APP_ID, na META_APP_SECRET kwanza.\n");
     process.exit(1); 
 }
 
@@ -138,7 +143,6 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
             return res.status(401).json({ success: false, error: "Namba hii haijasajiliwa kwenye mfumo." });
         }
 
-        // Ulinzi: Kama aliingia na Facebook, hana nenosiri
         if (!business.password) {
             return res.status(401).json({ success: false, error: "Akaunti hii iliunganishwa kupitia Facebook. Tafadhali tumia kitufe cha 'Endelea na Facebook'." });
         }
@@ -159,33 +163,44 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
     } catch (error) { res.status(500).json({ success: false, error: "Hitilafu kwenye Server." }); }
 });
 
-// 🔥 4.3: FACEBOOK EMBEDDED SIGNUP (META LOGIN) 🔥
+// 🔥 4.3: FACEBOOK EMBEDDED SIGNUP WIZARD (META LOGIN) 🔥
 app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
     try {
-        const { accessToken } = req.body;
-        if (!accessToken) return res.status(400).json({ success: false, error: "Access Token inahitajika." });
+        const { accessToken: codeOrToken } = req.body;
+        if (!codeOrToken) return res.status(400).json({ success: false, error: "Access Token au Code inahitajika kutoka Meta." });
+
+        let finalToken = codeOrToken;
+
+        // 🔥 LOGIC MPYA YA KIUSALAMA: Kubadili Code kuwa Access Token
+        // Token za Meta huanza na 'EAA', kwa hiyo kama ni fupi au haina EAA, tunajua ni 'Code'
+        if (!codeOrToken.startsWith('EAA')) {
+            console.log(`🔄 [META AUTH] Ninabadili Code iliyopokelewa kuwa Access Token...`);
+            const tokenUrl = `https://graph.facebook.com/v20.0/oauth/access_token?client_id=${META_APP_ID}&client_secret=${META_APP_SECRET}&code=${codeOrToken}`;
+            const tokenRes = await axios.get(tokenUrl);
+            finalToken = tokenRes.data.access_token;
+        }
 
         // 1. Vuta taarifa za msingi za mtumiaji toka Facebook
-        const fbUserRes = await axios.get(`https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`);
+        const fbUserRes = await axios.get(`https://graph.facebook.com/me?fields=id,name,email&access_token=${finalToken}`);
         const fbUser = fbUserRes.data;
 
         let wabaId = null;
         let phoneId = null;
 
-        // 2. SAFE BLOCK: Tunavuta WABA ID kiotomatiki (Ikishindwa, hai-crash mfumo)
+        // 2. SAFE BLOCK: Tunavuta WABA ID na Phone ID kiotomatiki
         try {
-            const wabaRes = await axios.get(`https://graph.facebook.com/v20.0/me/client_whatsapp_business_accounts?access_token=${accessToken}`);
+            const wabaRes = await axios.get(`https://graph.facebook.com/v20.0/me/client_whatsapp_business_accounts?access_token=${finalToken}`);
             
             if (wabaRes.data?.data?.length > 0) {
                 wabaId = wabaRes.data.data[0].id;
                 
-                const phoneRes = await axios.get(`https://graph.facebook.com/v20.0/${wabaId}/phone_numbers?access_token=${accessToken}`);
+                const phoneRes = await axios.get(`https://graph.facebook.com/v20.0/${wabaId}/phone_numbers?access_token=${finalToken}`);
                 if (phoneRes.data?.data?.length > 0) {
                     phoneId = phoneRes.data.data[0].id;
                 }
             }
         } catch (metaErr) {
-            console.log("⚠️ Meta haijatoa WABA ID kiotomatiki, lakini mteja anaendelea kuingia kwenye mfumo.");
+            console.log(`⚠️ [META WARNING] Haijaweza kuvuta WABA ID kiotomatiki kwa ${fbUser.name}, lakini anaendelea kuingia.`);
         }
 
         // 3. Mtafute au Mtengeneze Mteja kwenye Kanzidata
@@ -197,23 +212,25 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
                     businessName: `${fbUser.name} Business`,
                     fullName: fbUser.name,
                     facebookId: fbUser.id,
-                    metaAccessToken: accessToken,
+                    metaAccessToken: finalToken,
                     wabaId: wabaId,
                     whatsappPhoneId: phoneId,
                     walletBalance: 0.0
                 }
             });
-            console.log(`\n🎊 [MTEJA MPYA SAAS (META)] -> Jina: ${business.businessName} | WABA ID: ${wabaId || 'Hajamaliza Setup'}`);
+            console.log(`\n🎉 [MTEJA MPYA SAAS (META)]`);
+            console.log(`   ├─ Jina: ${business.businessName}`);
+            console.log(`   └─ WABA: ${wabaId || 'Haijapatikana'}\n`);
         } else {
             business = await prisma.business.update({
                 where: { id: business.id },
                 data: { 
-                    metaAccessToken: accessToken,
+                    metaAccessToken: finalToken,
                     ...(wabaId && { wabaId }),
                     ...(phoneId && { whatsappPhoneId: phoneId })
                 }
             });
-            console.log(`🔓 [META LOGIN SUCCESS] -> ${business.businessName} ameingia.`);
+            console.log(`🔓 [META LOGIN SUCCESS] -> ${business.businessName} ameingia ofisini.`);
         }
 
         const token = jwt.sign({ businessId: business.id }, JWT_SECRET, { expiresIn: '7d' });
@@ -232,7 +249,8 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Meta API Error:", error.response?.data || error.message);
+        console.error("\n❌ [META API ERROR] Imetokea hitilafu kuwasiliana na Meta:");
+        console.error(error.response?.data || error.message);
         res.status(500).json({ success: false, error: "Imeshindwa kuwasiliana na seva za Meta. Hakikisha akaunti yako haina shida." });
     }
 });
@@ -246,12 +264,12 @@ app.post('/api/settings/update', verifyToken, async (req, res) => {
         const business = await prisma.business.findUnique({ where: { id: req.user.businessId } });
         
         if(business.whatsappPhoneId && business.whatsappPhoneId !== whatsappPhoneId.trim()) {
-            console.log(`\n🔒 [ULINZI] ${business.businessName} amejaribu kubadili Phone ID kwa nguvu.`);
+            console.log(`\n🔒 [ULINZI MKALI] ${business.businessName} amejaribu kubadili Phone ID isivyo halali.`);
             return res.status(400).json({ success: false, error: "Namba hii tayari imesajiliwa na imefungwa. Wasiliana na KEDESH Admin kuibadili." });
         }
 
         await prisma.business.update({ where: { id: req.user.businessId }, data: { whatsappPhoneId: whatsappPhoneId.trim() } });
-        console.log(`\n🔒 [PHONE ID ILIYOFUNGWA] ${business.businessName} -> Namba MPYA: ${whatsappPhoneId.trim()}`);
+        console.log(`\n🛡️ [PHONE ID ILIYOFUNGWA] ${business.businessName} -> Namba MPYA: ${whatsappPhoneId.trim()}`);
         res.status(200).json({ success: true, message: "Namba ya Phone ID imeunganishwa kikamilifu!" });
     } catch (error) { res.status(500).json({ success: false, error: "Hitilafu imetokea kwenye mfumo." }); }
 });
@@ -511,7 +529,7 @@ server.listen(PORT, () => {
     console.log(` 🚀 KEDESH SAAS BACKEND IMESIMAMA IMARA NA INASUBIRI KAZI `);
     console.log(`=============================================================`);
     console.log(` 🟢 PORT       : ${PORT}`);
-    console.log(` 🏢 MUUNDO     : Multi-Tenant SaaS (FB Login Supported)`);
+    console.log(` 🏢 MUUNDO     : Premium Multi-Tenant SaaS (Meta Wizard API)`);
     console.log(` ⚡ SOCKET.IO  : Ipo Hewani, Inasukuma SMS & Tiki LIVE!`);
     console.log(`=============================================================\n`);
 });

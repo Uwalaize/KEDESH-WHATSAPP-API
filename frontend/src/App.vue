@@ -366,8 +366,9 @@ const loginWithFacebook = () => {
   // TUNAITA DIRISHA KWA KUTUMIA CONFIGURATION ID MPYA YA WABA
   window.FB.login((response) => {
     if (response.authResponse) {
-      const accessToken = response.authResponse.accessToken;
-      processFacebookAuth(accessToken);
+      // 🔥 MPYA: Hapa sasa tunadaka CODE badala ya Access Token ya kawaida
+      const code = response.authResponse.code || response.authResponse.accessToken;
+      processFacebookAuth(code);
     } else {
       isLoading.value = false;
       isFacebookAuth.value = false;
@@ -375,13 +376,15 @@ const loginWithFacebook = () => {
     }
   }, {
     config_id: '1550680676648524',
+    response_type: 'code', // 🔥 HII NDIO INAONDOA ILE ERROR NYEKUNDU
     override_default_response_type: true
   });
 };
 
-const processFacebookAuth = async (token) => {
+const processFacebookAuth = async (code) => {
   try {
-    const res = await axios.post(`${API_URL}/facebook-login`, { accessToken: token });
+    // Tunatuma hiyo "code" kwenye backend yetu
+    const res = await axios.post(`${API_URL}/facebook-login`, { accessToken: code });
     
     if(res.data.success) {
       localStorage.setItem('msamba_token', res.data.token);
