@@ -20,7 +20,8 @@ app.set('trust proxy', 1);
 const server = http.createServer(app); 
 
 const io = new Server(server, {
-    cors: { origin: '*', methods: ['GET', 'POST'] } 
+    cors: { origin: '*', methods: ['GET', 'POST'] },
+    transports: ['websocket', 'polling']
 });
 
 const PORT = process.env.PORT || 3000;
@@ -44,22 +45,51 @@ if (!META_VERIFY_TOKEN || !META_ACCESS_TOKEN || !META_APP_ID || !META_APP_SECRET
     process.exit(1); 
 }
 
+// ==========================================
+// 🛡️ MIDDLEWARE ZA ULINZI
+// ==========================================
 app.use(helmet()); 
 app.use(cors()); 
 app.use(express.json({ limit: '5mb' })); 
 
-const apiLimiter = rateLimit({ windowMs: 1 * 60 * 1000, max: 150, standardHeaders: true, legacyHeaders: false });
+const apiLimiter = rateLimit({ 
+    windowMs: 1 * 60 * 1000, 
+    max: 150, 
+    standardHeaders: true, 
+    legacyHeaders: false,
+    message: { success: false, error: "Umefikia kikomo cha maombi. Subiri dakika 1." }
+});
 app.use('/api/', apiLimiter); 
 
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { success: false, error: "Umejaribu mara nyingi mno. Subiri dakika 15." } });
+const authLimiter = rateLimit({ 
+    windowMs: 15 * 60 * 1000, 
+    max: 10, 
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: "Umejaribu mara nyingi mno. Subiri dakika 15." } 
+});
 
+// ==========================================
+// 🔐 MIDDLEWARE YA KUTHIBITISHA TOKEN
+// ==========================================
 const verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    if (!authHeader) return res.status(403).json({ success: false, error: "Huruhusiwi, Tiketi inahitajika." });
+    if (!authHeader) {
+        return res.status(403).json({ success: false, error: "Huruhusiwi, Tiketi inahitajika." });
+    }
     
     const token = authHeader.split(' ')[1];
+    if (!token) {
+        return res.status(403).json({ success: false, error: "Muundo wa tiketi si sahihi." });
+    }
+    
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
-        if (err) return res.status(401).json({ success: false, error: "Tiketi imekwisha muda wake. Ingia upya kwenye mfumo." });
+        if (err) {
+            if (err.name === 'TokenExpiredError') {
+                return res.status(401).json({ success: false, error: "Tiketi imekwisha muda wake. Ingia upya kwenye mfumo." });
+            }
+            return res.status(401).json({ success: false, error: "Tiketi si halali. Ingia upya." });
+        }
         req.user = decoded; 
         next();
     });
@@ -86,7 +116,7 @@ const sendWhatsAppMessageAsAdmin = async (business, phone, payload, type = 'text
         method: 'POST',
         url: url,
         headers: { 
-            'Authorization': `Bearer ${adminToken}`, // Token ya Admin (Kedesh)
+            'Authorization': `Bearer ${adminToken}`,
             'Content-Type': 'application/json' 
         },
         data: {
@@ -94,18 +124,19 @@ const sendWhatsAppMessageAsAdmin = async (business, phone, payload, type = 'text
             to: phone,
             type: type,
             ...(type === 'text' ? { text: { body: payload } } : { template: payload })
-        }
+        },
+        timeout: 15000 // 15 seconds timeout
     });
 };
 
 /**
  * 🔒 FUNCTION YA KUTHIBITISHA TOKEN YA MTEJA (KWA LOGIN TU)
- * Hii inatumika tu wakati wa Facebook Login kuthibitisha mteja ni halali
- * HAITUMIKI kutuma ujumbe - ni kwa ajili ya uthibitisho tu
  */
 const verifyCustomerToken = async (customerToken) => {
     try {
-        const response = await axios.get(`https://graph.facebook.com/me?fields=id,name&access_token=${customerToken}`);
+        const response = await axios.get(`https://graph.facebook.com/me?fields=id,name&access_token=${customerToken}`, {
+            timeout: 10000
+        });
         return response.data;
     } catch (error) {
         throw new Error("Token ya mteja si halali au imekwisha muda.");
@@ -141,13 +172,16 @@ io.on('connection', (socket) => {
 app.get('/api/dashboard/stats', verifyToken, async (req, res) => {
     try {
         const businessId = req.user.businessId;
-        const totalSent = await prisma.message.count({ where: { businessId, direction: 'OUTBOUND' } });
-        const totalDelivered = await prisma.message.count({ where: { businessId, direction: 'OUTBOUND', status: { in: ['DELIVERED', 'READ'] } } });
-        const totalContacts = await prisma.contact.count({ where: { businessId } });
-        const totalFailed = await prisma.message.count({ where: { businessId, direction: 'OUTBOUND', status: 'FAILED' } });
+        
+        const [totalSent, totalDelivered, totalContacts, totalFailed, business] = await Promise.all([
+            prisma.message.count({ where: { businessId, direction: 'OUTBOUND' } }),
+            prisma.message.count({ where: { businessId, direction: 'OUTBOUND', status: { in: ['DELIVERED', 'READ'] } } }),
+            prisma.contact.count({ where: { businessId } }),
+            prisma.message.count({ where: { businessId, direction: 'OUTBOUND', status: 'FAILED' } }),
+            prisma.business.findUnique({ where: { id: businessId }, select: { walletBalance: true } })
+        ]);
 
-        // Takwimu za kifedha
-        const walletBalance = (await prisma.business.findUnique({ where: { id: businessId }, select: { walletBalance: true } }))?.walletBalance || 0;
+        const walletBalance = business?.walletBalance || 0;
 
         res.status(200).json({ 
             success: true, 
@@ -160,13 +194,13 @@ app.get('/api/dashboard/stats', verifyToken, async (req, res) => {
             } 
         });
     } catch (error) { 
-        console.error("Stats Error:", error);
-        res.status(500).json({ success: false, error: "Imeshindwa kuvuta takwimu." }); 
+        console.error("❌ [Stats Error]:", error.message);
+        res.status(500).json({ success: false, error: "Imeshindwa kuvuta takwimu. Tafadhali jaribu tena." }); 
     }
 });
 
 // ==========================================
-// 💰 3B. API YA KUTAZAMA SALIO NA TRANSACTIONS
+// 💰 3B. API YA KUTAZAMA SALIO
 // ==========================================
 app.get('/api/wallet/balance', verifyToken, async (req, res) => {
     try {
@@ -185,13 +219,13 @@ app.get('/api/wallet/balance', verifyToken, async (req, res) => {
             businessName: business.businessName
         });
     } catch (error) {
-        console.error("Wallet Error:", error);
+        console.error("❌ [Wallet Error]:", error.message);
         res.status(500).json({ success: false, error: "Imeshindwa kuvuta salio." });
     }
 });
 
 // ==========================================
-// 🔐 4. API ZA AUTHENTICATION (REGISTER, LOGIN, FB)
+// 🔐 4. API ZA AUTHENTICATION
 // ==========================================
 
 // 4.1: USAJILI WA KAWAIDA
@@ -199,8 +233,12 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
     try {
         const { businessName, fullName, phone, password } = req.body;
         
-        if(!phone || !password) {
+        if (!phone || !password) {
             return res.status(400).json({ success: false, error: "Namba ya simu na nenosiri ni lazima." });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ success: false, error: "Nenosiri linatakiwa liwe na angalau herufi 6." });
         }
 
         const existingBusiness = await prisma.business.findFirst({ where: { phone } });
@@ -211,11 +249,11 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // 🔥 TUMEONDOA 'isActive' - haipo kwenye schema
+        // 🔥 HAKUNA 'isActive' - IMETOLEWA KABISA 🔥
         await prisma.business.create({
             data: { 
-                businessName, 
-                fullName, 
+                businessName: businessName || 'Biashara Yangu', 
+                fullName: fullName || 'Mtumiaji', 
                 phone, 
                 password: hashedPassword, 
                 walletBalance: 0.0,
@@ -223,11 +261,11 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
             }
         });
 
-        console.log(`\n🎊 [MTEJA MPYA SAAS] -> Jina: ${businessName} | Namba: +${phone}`);
-        res.status(201).json({ success: true, message: "Usajili umekamilika kikamilifu!" });
+        console.log(`\n🎊 [MTEJA MPYA] -> Jina: ${businessName} | Namba: +${phone}`);
+        res.status(201).json({ success: true, message: "Usajili umekamilika! Unaweza kuingia sasa." });
     } catch (error) { 
-        console.error("Register Error:", error);
-        res.status(500).json({ success: false, error: "Hitilafu imetokea kwenye Server. Jaribu tena." }); 
+        console.error("❌ [Register Error]:", error.message);
+        res.status(500).json({ success: false, error: "Hitilafu imetokea wakati wa usajili. Jaribu tena." }); 
     }
 });
 
@@ -235,6 +273,11 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
 app.post('/api/auth/login', authLimiter, async (req, res) => {
     try {
         const { phone, password } = req.body;
+        
+        if (!phone || !password) {
+            return res.status(400).json({ success: false, error: "Namba ya simu na nenosiri ni lazima." });
+        }
+
         const business = await prisma.business.findFirst({ where: { phone } });
         
         if (!business) {
@@ -243,7 +286,10 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 
         // Kama hana password (aliingia kwa Facebook pekee)
         if (!business.password) {
-            return res.status(401).json({ success: false, error: "Akaunti hii iliunganishwa kupitia Facebook. Tafadhali tumia kitufe cha 'Endelea na Facebook'." });
+            return res.status(401).json({ 
+                success: false, 
+                error: "Akaunti hii iliunganishwa kupitia Facebook. Tafadhali tumia kitufe cha 'Endelea na Facebook'." 
+            });
         }
 
         const isMatch = await bcrypt.compare(password, business.password);
@@ -269,12 +315,12 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
             } 
         });
     } catch (error) { 
-        console.error("Login Error:", error);
-        res.status(500).json({ success: false, error: "Hitilafu kwenye Server." }); 
+        console.error("❌ [Login Error]:", error.message);
+        res.status(500).json({ success: false, error: "Hitilafu kwenye Server wakati wa kuingia." }); 
     }
 });
 
-// 🔥 4.3: FACEBOOK LOGIN (IMEREKEBISHWA - HAKUNA 'isActive') 🔥
+// 🔥 4.3: FACEBOOK LOGIN (PRODUCTION READY - NO isActive, NO lastFacebookLogin) 🔥
 app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
     try {
         const { accessToken: codeOrToken } = req.body;
@@ -289,10 +335,11 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
             console.log(`🔄 [META AUTH] Kubadili Code kuwa Access Token...`);
             try {
                 const tokenUrl = `https://graph.facebook.com/v20.0/oauth/access_token?client_id=${META_APP_ID}&client_secret=${META_APP_SECRET}&code=${codeOrToken}`;
-                const tokenRes = await axios.get(tokenUrl);
+                const tokenRes = await axios.get(tokenUrl, { timeout: 10000 });
                 finalToken = tokenRes.data.access_token;
+                console.log(`✅ Code imebadilishwa kuwa Token kikamilifu.`);
             } catch (error) {
-                console.error("❌ Imeshindwa kubadili code kuwa token:", error.response?.data || error.message);
+                console.error("❌ Imeshindwa kubadili code:", error.response?.data || error.message);
                 return res.status(400).json({ success: false, error: "Imeshindwa kubadilisha code ya Meta kuwa token. Jaribu tena." });
             }
         }
@@ -305,7 +352,7 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
             return res.status(401).json({ success: false, error: "Imeshindwa kuthibitisha akaunti yako ya Facebook. Tafadhali jaribu tena." });
         }
 
-        console.log(`✅ [META VERIFIED] Mtumiaji: ${fbUser.name} (${fbUser.id})`);
+        console.log(`✅ [META VERIFIED] Mtumiaji: ${fbUser.name} (Facebook ID: ${fbUser.id})`);
 
         let wabaId = null;
         let phoneId = null;
@@ -314,42 +361,44 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
         try {
             console.log("🔍 [META] Kutafuta WABA ID kupitia Debug Token...");
             const debugUrl = `https://graph.facebook.com/v20.0/debug_token?input_token=${finalToken}&access_token=${META_APP_ID}%7C${META_APP_SECRET}`;
-            const debugRes = await axios.get(debugUrl);
+            const debugRes = await axios.get(debugUrl, { timeout: 10000 });
             const scopes = debugRes.data?.data?.granular_scopes || [];
             
             const wabaScope = scopes.find(s => s.scope === 'whatsapp_business_management' || s.scope === 'whatsapp_business_messaging');
             if (wabaScope && wabaScope.target_ids?.length > 0) {
                 wabaId = wabaScope.target_ids[0];
-                console.log(`✅ WABA ID Imepatikana: ${wabaId}`);
+                console.log(`✅ WABA ID Imepatikana kupitia Debug Token: ${wabaId}`);
             } else {
-                console.log("⚠️ Debug Token haikuonyesha WABA target_ids.");
+                console.log("⚠️ Debug Token haikuonyesha WABA target_ids. Ruhusa za WhatsApp huenda hazijatolewa.");
             }
         } catch(e) {
             console.log("⚠️ Imeshindwa kusoma Debug Token:", e.response?.data?.error?.message || e.message);
         }
 
-        // 2B: KAMA HAIKUONEKANA, TAFUTA KUPITIA BUSINESSES
+        // 2B: NJIA MBADALA - TAFUTA KUPITIA BUSINESSES
         if (!wabaId) {
             try {
-                console.log("🔍 [META] Kutafuta WABA ID kupitia Business Profile...");
-                const bizRes = await axios.get(`https://graph.facebook.com/v20.0/me/businesses?access_token=${finalToken}`);
+                console.log("🔍 [META] Kutafuta WABA ID kupitia Business Profile (Njia Mbadala)...");
+                const bizRes = await axios.get(`https://graph.facebook.com/v20.0/me/businesses?access_token=${finalToken}`, { timeout: 10000 });
                 const businesses = bizRes.data?.data || [];
+                
+                console.log(`   └─ Biashara zilizopatikana: ${businesses.length}`);
                 
                 for (let b of businesses) {
                     try {
                         // Jaribu owned WABA
-                        const wabaRes = await axios.get(`https://graph.facebook.com/v20.0/${b.id}/owned_whatsapp_business_accounts?access_token=${finalToken}`);
+                        const wabaRes = await axios.get(`https://graph.facebook.com/v20.0/${b.id}/owned_whatsapp_business_accounts?access_token=${finalToken}`, { timeout: 10000 });
                         if (wabaRes.data?.data?.length > 0) {
                             wabaId = wabaRes.data.data[0].id;
-                            console.log(`✅ WABA ID Imepatikana (Owned): ${wabaId}`);
+                            console.log(`✅ WABA ID Imepatikana (Owned) kutoka kwa ${b.name}: ${wabaId}`);
                             break;
                         }
 
                         // Jaribu client WABA
-                        const clientWabaRes = await axios.get(`https://graph.facebook.com/v20.0/${b.id}/client_whatsapp_business_accounts?access_token=${finalToken}`);
+                        const clientWabaRes = await axios.get(`https://graph.facebook.com/v20.0/${b.id}/client_whatsapp_business_accounts?access_token=${finalToken}`, { timeout: 10000 });
                         if (clientWabaRes.data?.data?.length > 0) {
                             wabaId = clientWabaRes.data.data[0].id;
-                            console.log(`✅ WABA ID Imepatikana (Client): ${wabaId}`);
+                            console.log(`✅ WABA ID Imepatikana (Client) kutoka kwa ${b.name}: ${wabaId}`);
                             break;
                         }
                     } catch(err) {
@@ -359,7 +408,7 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
                 }
                 
                 if (!wabaId) {
-                    console.log("⚠️ Hakuna WABA iliyopatikana kupitia Business Profile.");
+                    console.log("⚠️ Hakuna WABA iliyopatikana. Mteja anahitaji kuwa na WhatsApp Business Account iliyounganishwa na Business Manager yake.");
                 }
             } catch(e) {
                 console.log("⚠️ Imeshindwa kusoma Business Profile:", e.response?.data?.error?.message || e.message);
@@ -369,27 +418,28 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
         // 2C: VUTA PHONE ID KAMA TUNA WABA ID
         if (wabaId) {
             try {
-                console.log("🔍 [META] Kutafuta Phone ID...");
-                const phoneRes = await axios.get(`https://graph.facebook.com/v20.0/${wabaId}/phone_numbers?access_token=${finalToken}`);
+                console.log("🔍 [META] Kutafuta Phone ID kutoka kwenye WABA...");
+                const phoneRes = await axios.get(`https://graph.facebook.com/v20.0/${wabaId}/phone_numbers?access_token=${finalToken}`, { timeout: 10000 });
                 if (phoneRes.data?.data?.length > 0) {
                     phoneId = phoneRes.data.data[0].id;
                     console.log(`✅ Phone ID imepatikana: ${phoneId}`);
                 } else {
-                    console.log("⚠️ WABA ipo lakini hakuna namba ya simu iliyounganishwa.");
+                    console.log("⚠️ WABA ipo lakini hakuna namba ya simu iliyounganishwa. Mteja anatakiwa kuverify namba yake kwenye Meta Business Suite.");
                 }
             } catch(e) {
                 console.log("⚠️ Hitilafu kuvuta Phone ID:", e.response?.data?.error?.message || e.message);
             }
         } else {
-            console.log("⚠️ [ONYO] WABA ID haijapatikana. Mteja ataingia lakini ataona Setup Warning kwenye Dashboard.");
+            console.log("⚠️ [ONYO] WABA ID haijapatikana. Mteja ataingia Dashboard lakini ataona Setup Warning.");
         }
 
         // 3. Mtafute au Mtengeneze Mteja kwenye Database
+        // 🔥 HAKUNA 'isActive' - IMETOLEWA KABISA 🔥
         let business = await prisma.business.findUnique({ where: { facebookId: fbUser.id } });
 
         if (!business) {
-            // 🔥 MTEJA MPYA - HAKUNA 'isActive' FIELD 🔥
-            console.log(`\n🎉 [MTEJA MPYA] Inaunda akaunti mpya...`);
+            // 🔥 MTEJA MPYA - Safi kabisa, hakuna isActive wala lastFacebookLogin 🔥
+            console.log(`\n🎉 [MTEJA MPYA SAAS (META)] Inaunda akaunti mpya...`);
             
             const createData = {
                 businessName: `${fbUser.name} Business`,
@@ -397,30 +447,29 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
                 facebookId: fbUser.id,
                 metaAccessToken: finalToken,
                 walletBalance: 0.0,
-                createdAt: new Date(),
-                lastFacebookLogin: new Date()
+                createdAt: new Date()
             };
             
-            // Ongeza WABA na Phone ID kama zipo (zinaweza kuwa null)
+            // Ongeza WABA na Phone ID kama zipo tu (zinaweza kuwa null)
             if (wabaId) createData.wabaId = wabaId;
             if (phoneId) createData.whatsappPhoneId = phoneId;
             
             business = await prisma.business.create({ data: createData });
             
-            console.log(`   ├─ Jina: ${business.businessName}`);
+            console.log(`   ├─ Jina la Biashara: ${business.businessName}`);
             console.log(`   ├─ Facebook ID: ${fbUser.id}`);
-            console.log(`   ├─ WABA: ${wabaId || '❌ Haijapatikana (Mteja ataona Warning)'}`);
-            console.log(`   └─ Phone ID: ${phoneId || '❌ Haijapatikana'}\n`);
+            console.log(`   ├─ WABA ID: ${wabaId || '❌ Haijapatikana (Mteja ataona Setup Warning kwenye Dashboard)'}`);
+            console.log(`   ├─ Phone ID: ${phoneId || '❌ Haijapatikana'}`);
+            console.log(`   └─ Token ya Mteja: Imehifadhiwa kwa usalama (haitumiki kutuma ujumbe) ✅\n`);
         } else {
-            // 🔥 MTEJA ANARUDIA - Sasisha token na IDs zilizopatikana 🔥
-            console.log(`🔓 [META LOGIN] ${business.businessName} anarejea...`);
+            // 🔥 MTEJA ANARUDIA - Sasisha tu data zilizopo 🔥
+            console.log(`🔓 [META LOGIN] ${business.businessName} anarejea ofisini...`);
             
             const updateData = { 
-                metaAccessToken: finalToken,
-                lastFacebookLogin: new Date()
+                metaAccessToken: finalToken
             };
             
-            // Sasisha WABA na Phone ID kama zimepatikana (usizifute kama hazipo)
+            // Sasisha WABA na Phone ID kama zimepatikana (USIZIFUTE kama hazipo)
             if (wabaId) updateData.wabaId = wabaId;
             if (phoneId) updateData.whatsappPhoneId = phoneId;
             
@@ -429,8 +478,9 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
                 data: updateData
             });
             
-            console.log(`   ├─ WABA: ${business.wabaId || 'Bado haijapatikana'}`);
-            console.log(`   └─ Phone ID: ${business.whatsappPhoneId || 'Bado haijapatikana'}`);
+            console.log(`   ├─ WABA ID: ${business.wabaId || 'Bado haijapatikana'}`);
+            console.log(`   ├─ Phone ID: ${business.whatsappPhoneId || 'Bado haijapatikana'}`);
+            console.log(`   └─ Token ya Mteja: Imesasishwa kwa usalama ✅`);
         }
 
         const token = jwt.sign({ businessId: business.id }, JWT_SECRET, { expiresIn: '7d' });
@@ -444,21 +494,21 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
                 businessName: business.businessName, 
                 fullName: business.fullName, 
                 walletBalance: business.walletBalance, 
-                whatsappPhoneId: business.whatsappPhoneId,  // Inaweza kuwa null
-                wabaId: business.wabaId,                    // Inaweza kuwa null
+                whatsappPhoneId: business.whatsappPhoneId,
+                wabaId: business.wabaId,
                 isFacebookConnected: true
             } 
         });
 
     } catch (error) {
         console.error("\n❌ [META API ERROR] Imetokea hitilafu kubwa:");
-        console.error("Message:", error.message);
+        console.error("   ├─ Message:", error.message);
         if (error.response?.data) {
-            console.error("Meta Response:", JSON.stringify(error.response.data, null, 2));
+            console.error("   └─ Meta Response:", JSON.stringify(error.response.data, null, 2));
         }
         res.status(500).json({ 
             success: false, 
-            error: "Imeshindwa kuwasiliana na seva za Meta. Hakikisha akaunti yako haina shida na umeruhusu ruhusa zote." 
+            error: "Imeshindwa kuwasiliana na seva za Meta. Hakikisha akaunti yako ina Business Manager na WhatsApp Business Account iliyounganishwa." 
         });
     }
 });
@@ -469,13 +519,18 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
 app.post('/api/settings/update', verifyToken, async (req, res) => {
     try {
         const { whatsappPhoneId } = req.body;
+        
+        if (!whatsappPhoneId || !whatsappPhoneId.trim()) {
+            return res.status(400).json({ success: false, error: "Phone ID inahitajika." });
+        }
+
         const business = await prisma.business.findUnique({ where: { id: req.user.businessId } });
         
         if (!business) {
             return res.status(404).json({ success: false, error: "Biashara haijapatikana." });
         }
         
-        if(business.whatsappPhoneId && business.whatsappPhoneId !== whatsappPhoneId.trim()) {
+        if (business.whatsappPhoneId && business.whatsappPhoneId !== whatsappPhoneId.trim()) {
             console.log(`\n🔒 [ULINZI MKALI] ${business.businessName} amejaribu kubadili Phone ID isivyo halali.`);
             return res.status(400).json({ success: false, error: "Namba hii tayari imesajiliwa na imefungwa. Wasiliana na KEDESH Admin kuibadili." });
         }
@@ -488,7 +543,7 @@ app.post('/api/settings/update', verifyToken, async (req, res) => {
         console.log(`\n🛡️ [PHONE ID ILIYOFUNGWA] ${business.businessName} -> Namba MPYA: ${whatsappPhoneId.trim()}`);
         res.status(200).json({ success: true, message: "Namba ya Phone ID imeunganishwa kikamilifu!" });
     } catch (error) { 
-        console.error("Settings Error:", error);
+        console.error("❌ [Settings Error]:", error.message);
         res.status(500).json({ success: false, error: "Hitilafu imetokea kwenye mfumo." }); 
     }
 });
@@ -502,141 +557,130 @@ app.get('/webhook', (req, res) => {
     const challenge = req.query['hub.challenge'];
     
     if (mode === 'subscribe' && token === META_VERIFY_TOKEN) {
-        console.log(`\n🟢 [WEBHOOK] Imeunganishwa na Meta Kikamilifu!`);
+        console.log(`\n🟢 [WEBHOOK] Imethibitishwa na Meta Kikamilifu!`);
         return res.status(200).send(challenge);
     }
     
-    console.log(`\n🔴 [WEBHOOK] Jaribio lisilo halali. Token: ${token}`);
+    console.log(`\n🔴 [WEBHOOK] Jaribio lisilo halali la uthibitisho. Token iliyotumwa: ${token}`);
     res.sendStatus(403);
 });
 
 app.post('/webhook', async (req, res) => {
-    // Tunajibu haraka Meta kabla ya kufanya processing
+    // Tunajibu Meta haraka kabla ya kuanza processing
     res.sendStatus(200); 
     
     try {
         const body = req.body;
-        if (body?.object === 'whatsapp_business_account') {
-            for (const entry of body.entry || []) {
-                for (const change of entry.changes || []) {
-                    const value = change.value;
-                    if (!value) continue;
+        if (body?.object !== 'whatsapp_business_account') return;
 
-                    const incomingPhoneId = value.metadata?.phone_number_id;
-                    let business = null;
+        for (const entry of body.entry || []) {
+            for (const change of entry.changes || []) {
+                const value = change.value;
+                if (!value) continue;
 
-                    if (incomingPhoneId) {
-                        business = await prisma.business.findFirst({ where: { whatsappPhoneId: incomingPhoneId } });
+                const incomingPhoneId = value.metadata?.phone_number_id;
+                if (!incomingPhoneId) continue;
+
+                const business = await prisma.business.findFirst({ where: { whatsappPhoneId: incomingPhoneId } });
+                
+                if (!business) {
+                    console.log(`⚠️ [WEBHOOK] Hakuna biashara yenye Phone ID: ${incomingPhoneId}`);
+                    continue;
+                }
+
+                // A) KUKAMATA TIKI ZA WHATSAPP (MESSAGE STATUS UPDATES)
+                if (value.statuses?.length > 0) {
+                    for (const statusObj of value.statuses) {
+                        const newStatus = statusObj.status.toUpperCase(); 
+                        
+                        await prisma.message.updateMany({ 
+                            where: { metaMsgId: statusObj.id }, 
+                            data: { status: newStatus }
+                        });
+                        
+                        io.to(business.id).emit('messageStatusUpdate', {
+                            metaMsgId: statusObj.id,
+                            status: newStatus,
+                            timestamp: statusObj.timestamp
+                        });
+
+                        const tickIcon = newStatus === 'READ' ? '🔵' : 
+                                        newStatus === 'DELIVERED' ? '🔘' : 
+                                        newStatus === 'SENT' ? '⚪' : '❌';
+                        
+                        console.log(`   ${tickIcon} [TIKI LIVE] -> ${business.businessName} | Status: ${newStatus}`);
                     }
-                    
-                    if (!business) {
-                        console.log(`⚠️ [WEBHOOK] Hakuna biashara yenye Phone ID: ${incomingPhoneId}`);
-                        continue;
-                    }
+                }
 
-                    // A) KUKAMATA TIKI ZA WHATSAPP (MESSAGE STATUS UPDATES)
-                    if (value.statuses && value.statuses.length > 0) {
-                        for (const statusObj of value.statuses) {
-                            const newStatus = statusObj.status.toUpperCase(); 
-                            
-                            await prisma.message.updateMany({ 
-                                where: { metaMsgId: statusObj.id }, 
-                                data: { 
-                                    status: newStatus,
-                                    ...(statusObj.timestamp && { deliveredAt: new Date(parseInt(statusObj.timestamp) * 1000) })
-                                } 
-                            });
-                            
-                            io.to(business.id).emit('messageStatusUpdate', {
-                                metaMsgId: statusObj.id,
-                                status: newStatus,
-                                timestamp: statusObj.timestamp
-                            });
-
-                            let tickIcon = newStatus === 'READ' ? '🔵' : 
-                                          newStatus === 'DELIVERED' ? '🔘' : 
-                                          newStatus === 'SENT' ? '⚪' : '❌';
-                            
-                            console.log(`   ${tickIcon} [TIKI LIVE] -> ${business.businessName} | Status: ${newStatus}`);
+                // B) KUKAMATA MESEJI MPYA INAYOINGIA
+                if (value.messages?.length > 0) {
+                    for (const message of value.messages) {
+                        const phoneNumber = message.from;
+                        const customerName = value.contacts?.[0]?.profile?.name || phoneNumber;
+                        
+                        let msgBody = "";
+                        if (message.type === 'text') {
+                            msgBody = message.text.body;
+                        } else if (message.type === 'button') {
+                            msgBody = message.button?.text || "[Amebofya Kitufe]";
+                        } else if (message.type === 'interactive') {
+                            msgBody = message.interactive?.button_reply?.title || 
+                                     message.interactive?.list_reply?.title || 
+                                     "[Mwitikio]";
+                        } else {
+                            msgBody = `📎 [Faili/Interactive: ${message.type}]`;
                         }
-                    }
 
-                    // B) KUKAMATA MESEJI MPYA INAYOINGIA
-                    if (value.messages && value.messages.length > 0) {
-                        for (const message of value.messages) {
-                            const phoneNumber = message.from;
-                            const customerName = value.contacts?.[0]?.profile?.name || phoneNumber;
-                            
-                            let msgBody = "";
-                            if (message.type === 'text') {
-                                msgBody = message.text.body;
-                            } else if (message.type === 'button') {
-                                msgBody = message.button?.text || "[Amebofya Kitufe]";
-                            } else if (message.type === 'interactive') {
-                                msgBody = message.interactive?.button_reply?.title || 
-                                         message.interactive?.list_reply?.title || 
-                                         "[Mwitikio]";
-                            } else {
-                                msgBody = `📎 [Faili/Interactive: ${message.type}]`;
-                            }
-
-                            let dbContact = await prisma.contact.findFirst({ 
-                                where: { businessId: business.id, phoneNumber: phoneNumber } 
+                        let dbContact = await prisma.contact.findFirst({ 
+                            where: { businessId: business.id, phoneNumber: phoneNumber } 
+                        });
+                        
+                        if (!dbContact) {
+                            dbContact = await prisma.contact.create({ 
+                                data: { businessId: business.id, phoneNumber, name: customerName } 
                             });
-                            
-                            if (!dbContact) {
-                                dbContact = await prisma.contact.create({ 
-                                    data: { 
-                                        businessId: business.id, 
-                                        phoneNumber: phoneNumber, 
-                                        name: customerName 
-                                    } 
-                                });
-                            }
+                        }
 
-                            const existingMsg = await prisma.message.findFirst({ 
-                                where: { metaMsgId: message.id } 
+                        const existingMsg = await prisma.message.findFirst({ where: { metaMsgId: message.id } });
+                        
+                        if (!existingMsg) {
+                            const newMsg = await prisma.message.create({
+                                data: { 
+                                    businessId: business.id, 
+                                    contactId: dbContact.id, 
+                                    metaMsgId: message.id, 
+                                    direction: 'INBOUND', 
+                                    content: msgBody, 
+                                    status: 'RECEIVED',
+                                    messageType: message.type
+                                }
                             });
-                            
-                            if (!existingMsg) {
-                                const newMsg = await prisma.message.create({
-                                    data: { 
-                                        businessId: business.id, 
-                                        contactId: dbContact.id, 
-                                        metaMsgId: message.id, 
-                                        direction: 'INBOUND', 
-                                        content: msgBody, 
-                                        status: 'RECEIVED',
-                                        messageType: message.type
-                                    }
-                                });
 
-                                console.log(`\n┌───────────────────────────────────────────────────────┐`);
-                                console.log(`│ 📥 [INBOX MPYA] KUTOKA: ${customerName} (+${phoneNumber})`);
-                                console.log(`│ 🏢 KWENDA KWA: ${business.businessName}`);
-                                console.log(`│ 💬 UJUMBE: "${msgBody.substring(0, 50)}${msgBody.length > 50 ? '...' : ''}"`);
-                                console.log(`└───────────────────────────────────────────────────────┘\n`);
+                            console.log(`\n┌───────────────────────────────────────────────────────┐`);
+                            console.log(`│ 📥 [INBOX MPYA] KUTOKA: ${customerName} (+${phoneNumber})`);
+                            console.log(`│ 🏢 KWENDA KWA: ${business.businessName}`);
+                            console.log(`│ 💬 UJUMBE: "${msgBody.substring(0, 50)}${msgBody.length > 50 ? '...' : ''}"`);
+                            console.log(`└───────────────────────────────────────────────────────┘\n`);
 
-                                io.to(business.id).emit('newIncomingMessage', {
-                                    contactId: dbContact.id,
-                                    contactName: customerName,
-                                    phoneNumber: phoneNumber,
-                                    message: {
-                                        id: newMsg.id,
-                                        content: newMsg.content,
-                                        direction: newMsg.direction,
-                                        status: newMsg.status,
-                                        createdAt: newMsg.createdAt
-                                    }
-                                });
-                            }
+                            io.to(business.id).emit('newIncomingMessage', {
+                                contactId: dbContact.id,
+                                contactName: customerName,
+                                phoneNumber: phoneNumber,
+                                message: {
+                                    id: newMsg.id,
+                                    content: newMsg.content,
+                                    direction: newMsg.direction,
+                                    status: newMsg.status,
+                                    createdAt: newMsg.createdAt
+                                }
+                            });
                         }
                     }
                 }
             }
         }
     } catch (error) { 
-        console.error("❌ Kosa la Webhook:", error.message); 
+        console.error("❌ [Webhook Error]:", error.message); 
     }
 });
 
@@ -658,11 +702,7 @@ app.get('/api/chat/contacts', verifyToken, async (req, res) => {
         const formattedContacts = await Promise.all(
             contacts.filter(c => c.messages.length > 0).map(async c => {
                 const unreadCount = await prisma.message.count({ 
-                    where: { 
-                        contactId: c.id, 
-                        direction: 'INBOUND', 
-                        status: 'RECEIVED' 
-                    } 
+                    where: { contactId: c.id, direction: 'INBOUND', status: 'RECEIVED' } 
                 });
                 
                 return {
@@ -681,13 +721,14 @@ app.get('/api/chat/contacts', verifyToken, async (req, res) => {
         formattedContacts.sort((a, b) => new Date(b.time) - new Date(a.time));
         res.status(200).json({ success: true, contacts: formattedContacts });
     } catch (error) { 
-        console.error("Contacts Error:", error);
+        console.error("❌ [Contacts Error]:", error.message);
         res.status(500).json({ error: error.message }); 
     }
 });
 
 app.get('/api/chat/messages/:contactId', verifyToken, async (req, res) => {
     try {
+        // Mark messages as READ
         await prisma.message.updateMany({ 
             where: { 
                 contactId: req.params.contactId, 
@@ -717,7 +758,7 @@ app.get('/api/chat/messages/:contactId', verifyToken, async (req, res) => {
             })) 
         });
     } catch (error) { 
-        console.error("Messages Error:", error);
+        console.error("❌ [Messages Error]:", error.message);
         res.status(500).json({ error: error.message }); 
     }
 });
@@ -767,13 +808,12 @@ app.post('/api/chat/send', verifyToken, async (req, res) => {
             }),
             prisma.business.update({ 
                 where: { id: business.id }, 
-                data: { 
-                    walletBalance: { decrement: LIVE_CHAT_COST }
-                } 
+                data: { walletBalance: { decrement: LIVE_CHAT_COST } } 
             })
         ]);
 
-        console.log(`\n💬 [LIVE CHAT] ${business.businessName} amemjibu mteja.`);
+        console.log(`\n💬 [LIVE CHAT] ${business.businessName} -> Mteja: +${phone}`);
+        console.log(`   ├─ Ujumbe: "${messageText.substring(0, 30)}..."`);
         console.log(`   ├─ Makato: TZS ${LIVE_CHAT_COST}`);
         console.log(`   └─ Salio Jipya: TZS ${updatedBiz.walletBalance}\n`);
         
@@ -806,19 +846,19 @@ app.post('/api/chat/send', verifyToken, async (req, res) => {
             }
         });
     } catch (error) { 
-        console.error("Send Message Error:", error.response?.data || error.message);
+        console.error("❌ [Send Message Error]:", error.response?.data || error.message);
         
         const errorMsg = error.response?.data?.error?.message || "";
         const errorCode = error.response?.data?.error?.code;
 
-        if(errorMsg.includes('24 hour') || errorMsg.includes('outside the allowed') || errorCode === 131047) {
+        if (errorMsg.includes('24 hour') || errorMsg.includes('outside the allowed') || errorCode === 131047) {
             return res.status(400).json({ 
                 success: false, 
                 error: "Masaa 24 yameisha tangu mteja huyu atume meseji. Kisheria, huwezi kutuma ujumbe wa kawaida hapa. Tumia Template kuanzisha mazungumzo." 
             });
         }
         
-        if(errorMsg.includes('access token') || errorMsg.includes('authorization') || errorCode === 190) {
+        if (errorMsg.includes('access token') || errorMsg.includes('authorization') || errorCode === 190) {
             return res.status(401).json({ 
                 success: false, 
                 error: "Hitilafu ya uthibitisho na Meta. Wasiliana na admin wa mfumo." 
@@ -833,6 +873,8 @@ app.post('/api/chat/send', verifyToken, async (req, res) => {
 // 🚀 8. BULK SMS ENGINE (MAKATO TZS 84) 🔥
 // ==========================================
 app.post('/api/send-bulk', verifyToken, async (req, res) => {
+    const startTime = Date.now();
+    
     try {
         const { contacts, campaignName, templateName, templateLanguage, headerImageUrl } = req.body; 
         
@@ -862,18 +904,26 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
             });
         }
 
+        // 🔥 PRO-LEVEL LOGGING - KAMPENI KAMILI 🔥
         console.log(`\n┏━━━━━━━━━━━━━━━━ 🚀 KAMPENI MPYA INAANZA ━━━━━━━━━━━━━━━━┓`);
-        console.log(`┃ BIASHARA : ${business.businessName}`);
-        console.log(`┃ WATEJA   : ${contacts.length}`);
-        console.log(`┃ TEMPLATE : ${templateName} (${templateLanguage})`);
-        console.log(`┃ GHARAMA  : TZS ${totalEstimatedCost}`);
+        console.log(`┃ BIASHARA    : ${business.businessName}`);
+        console.log(`┃ WATEJA      : ${contacts.length}`);
+        console.log(`┃ TEMPLATE    : ${templateName || 'hello_world'} (${templateLanguage || 'sw'})`);
+        console.log(`┃ PICHA       : ${headerImageUrl ? '✅ Ipo' : '❌ Hakuna'}`);
+        console.log(`┃ GHARAMA/JUM : TZS ${BULK_SMS_COST}`);
+        console.log(`┃ GHARAMA KML : TZS ${totalEstimatedCost}`);
+        console.log(`┃ SALIO AWALI : TZS ${business.walletBalance}`);
+        console.log(`┃ TOKEN       : ADMIN (Kedesh Limited) 🔑`);
         console.log(`┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛`);
+        console.log(`⏳ Inatuma ujumbe kwa wateja ${contacts.length}...\n`);
         
         let successCount = 0; 
         let failedCount = 0; 
         let failedNumbers = [];
+        let batchNumber = 0;
 
-        for (let phone of contacts) {
+        for (let i = 0; i < contacts.length; i++) {
+            const phone = contacts[i];
             try {
                 let templatePayload = { 
                     name: templateName || "hello_world", 
@@ -883,18 +933,23 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
                 if (headerImageUrl && headerImageUrl.trim() !== '') {
                     templatePayload.components = [{ 
                         type: "header", 
-                        parameters: [{ 
-                            type: "image", 
-                            image: { link: headerImageUrl.trim() } 
-                        }] 
+                        parameters: [{ type: "image", image: { link: headerImageUrl.trim() } }] 
                     }];
                 }
 
                 const metaRes = await sendWhatsAppMessageAsAdmin(business, phone, templatePayload, 'template');
                 
                 successCount++;
-                process.stdout.write(`✅ `);
                 const metaMsgId = metaRes.data.messages[0].id;
+                
+                // Log kwa kila batch ya 50
+                if (successCount % 50 === 0 || successCount === 1) {
+                    batchNumber++;
+                    const progress = ((i + 1) / contacts.length * 100).toFixed(1);
+                    console.log(`   📦 Batch #${batchNumber} | Zimetumwa: ${successCount} | Progress: ${progress}%`);
+                }
+
+                process.stdout.write(`✅ `);
 
                 let dbContact = await prisma.contact.findFirst({ 
                     where: { businessId: business.id, phoneNumber: phone } 
@@ -902,11 +957,7 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
                 
                 if (!dbContact) {
                     dbContact = await prisma.contact.create({ 
-                        data: { 
-                            businessId: business.id, 
-                            phoneNumber: phone, 
-                            name: phone 
-                        } 
+                        data: { businessId: business.id, phoneNumber: phone, name: phone } 
                     });
                 }
 
@@ -916,7 +967,7 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
                         contactId: dbContact.id, 
                         metaMsgId: metaMsgId, 
                         direction: 'OUTBOUND', 
-                        content: `📢 [Kampeni: ${campaignName || 'Ofa'} - Tmp: ${templateName}]`, 
+                        content: `📢 [${campaignName || 'Kampeni'}] - Template: ${templateName}`, 
                         status: 'SENT',
                         messageType: 'template'
                     }
@@ -928,7 +979,17 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
                 failedCount++;
                 const metaError = error.response?.data?.error?.message || error.message;
                 process.stdout.write(`❌ `);
-                failedNumbers.push({ phone, reason: metaError.substring(0, 100) });
+                failedNumbers.push({ 
+                    phone, 
+                    reason: metaError.substring(0, 80),
+                    code: error.response?.data?.error?.code || 'UNKNOWN'
+                });
+                
+                // Log kosa kubwa
+                if (error.response?.data?.error?.code === 190 || metaError.includes('access token')) {
+                    console.error(`\n⚠️ [TOKEN ERROR] Token ya Admin imekwisha au si halali! Acha kutuma.`);
+                    break;
+                }
             }
         }
 
@@ -938,44 +999,63 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
         if (actualCost > 0) {
             const updatedBiz = await prisma.business.update({ 
                 where: { id: business.id }, 
-                data: { 
-                    walletBalance: { decrement: actualCost }
-                } 
+                data: { walletBalance: { decrement: actualCost } } 
             });
             newBalance = updatedBiz.walletBalance;
         }
 
-        console.log(`\n\n╔════════════════ 🏁 KAMPENI IMEKAMILIKA ════════════════╗`);
-        console.log(`║ ✅ YAMEFIKA    : ${successCount}/${contacts.length}`);
-        console.log(`║ ❌ YAMEFELI    : ${failedCount}`);
-        console.log(`║ 💰 MAKATO      : TZS ${actualCost}`);
-        console.log(`║ 🏦 SALIO MPYA  : TZS ${newBalance}`);
+        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+
+        // 🔥 RIPOTI YA MWISHO - PRO LEVEL 🔥
+        console.log(`\n`);
+        console.log(`╔════════════════ 🏁 KAMPENI IMEKAMILIKA ════════════════╗`);
+        console.log(`║ 📊 MUHTASARI WA KAMPENI:`);
+        console.log(`║    ✅ Zilizofika   : ${successCount}/${contacts.length} (${((successCount/contacts.length)*100).toFixed(1)}%)`);
+        console.log(`║    ❌ Zilizofeli   : ${failedCount}`);
+        console.log(`║    💰 Gharama      : TZS ${actualCost} (TZS ${BULK_SMS_COST} x ${successCount})`);
+        console.log(`║    🏦 Salio Awali  : TZS ${business.walletBalance}`);
+        console.log(`║    🏦 Salio Mpya   : TZS ${newBalance}`);
+        console.log(`║    ⏱️  Muda         : Sekunde ${duration}`);
         console.log(`╚════════════════════════════════════════════════════════╝\n`);
+        
+        // Log failed numbers kama zipo
+        if (failedNumbers.length > 0) {
+            console.log(`📋 NAMBA ZILIZOFELI (${failedNumbers.length}):`);
+            failedNumbers.slice(0, 5).forEach(f => {
+                console.log(`   ❌ +${f.phone} -> ${f.reason}`);
+            });
+            if (failedNumbers.length > 5) {
+                console.log(`   ... na nyingine ${failedNumbers.length - 5}`);
+            }
+            console.log(``);
+        }
 
         io.to(business.id).emit('campaignComplete', {
             campaignName: campaignName || 'Kampeni',
             stats: {
                 total: contacts.length,
                 success: successCount,
-                failed: failedCount
+                failed: failedCount,
+                duration: duration
             },
             newBalance: newBalance
         });
 
         return res.status(200).json({ 
             success: true, 
-            message: "Kampeni Imekamilika", 
+            message: `Kampeni imekamilika. ${successCount}/${contacts.length} zimefika. Muda: ${duration}s`,
             stats: { 
                 total: contacts.length, 
                 success: successCount, 
-                failed: failedCount 
+                failed: failedCount,
+                duration: duration
             }, 
             newBalance,
             failedNumbers: failedNumbers.slice(0, 10)
         });
         
     } catch (error) { 
-        console.error("Bulk SMS Error:", error);
+        console.error("❌ [Bulk SMS Fatal Error]:", error.message);
         return res.status(500).json({ 
             success: false, 
             error: "Hitilafu imetokea kwenye Server wakati wa kutuma Bulk SMS." 
@@ -991,19 +1071,27 @@ app.get('/', (req, res) => {
         status: "Online 🟢", 
         sockets: "Active 🔌", 
         architecture: "Hybrid Multi-Tenant (Admin Token for Sending, Customer Token for Auth)",
-        version: "2.1.0",
-        uptime: process.uptime()
+        version: "2.2.0",
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
     }); 
 });
 
 // ==========================================
-// 🚦 10. ERROR HANDLING MIDDLEWARE
+// 🚦 10. GLOBAL ERROR HANDLING MIDDLEWARE
 // ==========================================
 app.use((err, req, res, next) => {
-    console.error("Unhandled Error:", err);
+    console.error("🚨 [UNHANDLED ERROR]:", err.stack || err.message);
+    
+    // Epuka kutuma error kama headers tayari zimetumwa
+    if (res.headersSent) {
+        return next(err);
+    }
+    
     res.status(500).json({ 
         success: false, 
-        error: "Hitilafu isiyotarajiwa imetokea. Tafadhali jaribu tena baadaye." 
+        error: "Hitilafu isiyotarajiwa imetokea. Tafadhali jaribu tena baadaye.",
+        reference: Date.now()
     });
 });
 
@@ -1012,7 +1100,7 @@ app.use((err, req, res, next) => {
 // ==========================================
 server.listen(PORT, () => {
     console.log(`\n=============================================================`);
-    console.log(` 🚀 KEDESH SAAS BACKEND IMESIMAMA IMARA NA INASUBIRI KAZI `);
+    console.log(` 🚀 KEDESH SAAS BACKEND v2.2.0 IMESIMAMA IMARA `);
     console.log(`=============================================================`);
     console.log(` 🟢 PORT          : ${PORT}`);
     console.log(` 🏢 MUUNDO        : Hybrid Multi-Tenant (Tech Provider Model)`);
@@ -1020,17 +1108,38 @@ server.listen(PORT, () => {
     console.log(` 💰 LIVE CHAT     : TZS ${LIVE_CHAT_COST}/ujumbe`);
     console.log(` 💰 BULK SMS      : TZS ${BULK_SMS_COST}/ujumbe`);
     console.log(` ⚡ SOCKET.IO     : Ipo Hewani, Inasukuma SMS & Tiki LIVE!`);
-    console.log(` 🛡️ ULINZI        : Wallet Check Kabla ya Kutuma`);
+    console.log(` 🛡️ ULINZI        : Wallet Check + Rate Limiting + Helmet`);
     console.log(` 📡 WEBHOOK       : Imejikita kwa META_VERIFY_TOKEN`);
-    console.log(` 📝 CHANGELOG     : v2.1.0 - Fixed isActive error, WABA null handling`);
+    console.log(` 📝 CHANGELOG     : v2.2.0 - No isActive, No lastFacebookLogin, Pro Logging, Global Error Handler`);
     console.log(`=============================================================\n`);
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('SIGTERM signal received: closing HTTP server');
-    server.close(() => {
-        console.log('HTTP server closed');
-        prisma.$disconnect();
+// ==========================================
+// 🛑 GRACEFUL SHUTDOWN
+// ==========================================
+const gracefulShutdown = async (signal) => {
+    console.log(`\n⚠️ ${signal} imepokelewa. Inazima server kwa utaratibu...`);
+    
+    server.close(async () => {
+        console.log('📴 HTTP server imezimwa.');
+        await prisma.$disconnect();
+        console.log('📴 Database connection imefungwa.');
+        process.exit(0);
     });
+    
+    // Force shutdown baada ya sekunde 10
+    setTimeout(() => {
+        console.error('⏰ Shutdown forced after 10s.');
+        process.exit(1);
+    }, 10000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('🚨 [UNHANDLED REJECTION]:', reason);
+});
+process.on('uncaughtException', (error) => {
+    console.error('🚨 [UNCAUGHT EXCEPTION]:', error);
+    process.exit(1);
 });
