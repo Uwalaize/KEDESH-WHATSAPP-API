@@ -282,7 +282,7 @@ import { ref, reactive, onMounted } from 'vue';
 import axios from 'axios';
 import Dashboard from './components/Dashboard.vue';
 
-const API_URL = 'https://kedesh-whatsapp-api.onrender.com/api/auth';
+const API_URL = 'https://backend-bulk-sms.onrender.com/api/auth';
 
 const countries = [
   { code: '255', flag: '🇹🇿', name: 'Tanzania' }, { code: '254', flag: '🇰🇪', name: 'Kenya' },

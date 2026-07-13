@@ -618,7 +618,7 @@ const sendLiveMessage = async () => {
 
   try {
     const token = localStorage.getItem('msamba_token');
-    const res = await axios.post('https://kedesh-whatsapp-api.onrender.com/api/chat/send', {
+    const res = await axios.post('https://backend-bulk-sms.onrender.com/api/chat/send', {
       contactId: activeChat.value, phone: currentActiveContact.value.phone, messageText: textToSend
     }, { headers: { Authorization: `Bearer ${token}` } });
 
