@@ -32,6 +32,7 @@
     <aside class="sidebar">
       <div class="brand">
         <img src="/logo/image.png" alt="Kedesh Limited" class="brand-logo" />
+        <!-- JINA LA BIASHARA KUTOKA DATABASE (Au KEDESH kama halipo) -->
         <h2>{{ userData?.businessName || 'KEDESH LIMITED' }}</h2>
       </div>
 
@@ -87,9 +88,10 @@
             <span>{{ isSocketConnected ? 'Live Sync ⚡' : 'Inaunganisha...' }}</span>
           </div>
 
-          <div class="status-badge" :class="userData?.whatsappPhoneId ? 'bg-success' : 'bg-warning'">
-            <span class="pulse-dot" :class="userData?.whatsappPhoneId ? 'pulse-green' : 'pulse-orange'"></span> 
-            <span>{{ userData?.whatsappPhoneId ? 'API Imeunganishwa' : 'API Haijaunganishwa' }}</span>
+          <!-- STATUS YA API INAANGALIA KAMA PHONE ID IPO NA WABA IPO -->
+          <div class="status-badge" :class="(userData?.whatsappPhoneId && userData?.wabaId) ? 'bg-success' : 'bg-warning'">
+            <span class="pulse-dot" :class="(userData?.whatsappPhoneId && userData?.wabaId) ? 'pulse-green' : 'pulse-orange'"></span> 
+            <span>{{ (userData?.whatsappPhoneId && userData?.wabaId) ? 'API Imeunganishwa' : 'Setup Haijakamilika' }}</span>
           </div>
           <button @click="$emit('logout')" class="logout-btn" title="Toka Kwenye Mfumo">🚪 Toka Nje</button>
         </div>
@@ -100,11 +102,22 @@
           
           <!-- HOME VIEW (MUHTASARI) -->
           <div v-if="currentView === 'home'" key="home" class="view-panel">
+            
+            <!-- ONYO KAMA MTEJA ALIRUKA SETUP (WABA HAIPATIKANI) -->
+            <div v-if="!userData?.wabaId || !userData?.whatsappPhoneId" class="alert-box warning mb-4" style="text-align: left;">
+              <span class="a-icon">⚠️</span> 
+              <div>
+                <strong>Akaunti yako haijakamilika!</strong><br>
+                Mfumo umeshindwa kupata WABA ID au Phone ID yako. Tafadhali <strong>Toka (Logout)</strong> na uingie tena, kisha hakikisha unamaliza hatua zote za kuunganisha namba yako kupitia dirisha la Meta (Facebook). 
+                <button class="btn-text-small mt-2" @click="currentView = 'settings'">Soma zaidi &rarr;</button>
+              </div>
+            </div>
+
             <div class="welcome-banner">
               <div class="banner-text">
-                <h2>Karibu sana, {{ userData?.fullName?.split(' ')[0] || 'Kiongozi' }}! 👋</h2>
+                <h2>Karibu sana, {{ userData?.fullName?.split(' ')[0] || userData?.businessName || 'Kiongozi' }}! 👋</h2>
                 <p>Huu ni mfumo wako wa kisasa wa kudhibiti mawasiliano ya WhatsApp. Tuma Bulk SMS na jibu wateja wako kwa urahisi na usalama wa hali ya juu.</p>
-                <button class="btn-banner" @click="currentView = 'bulk'">🚀 Anza Kampeni Mpya</button>
+                <button class="btn-banner" @click="currentView = 'bulk'" :disabled="!userData?.wabaId">🚀 Anza Kampeni Mpya</button>
               </div>
               <div class="banner-graphic">📈</div>
             </div>
@@ -153,7 +166,7 @@
                   <p class="text-muted mb-4">Pakia faili la Excel (.xlsx au .csv) lenye namba za wateja wako.</p>
                   
                   <div v-if="!userData?.whatsappPhoneId" class="enc-alert bg-warning text-dark mb-3">
-                    ⚠️ Hujaweka Namba yako ya WhatsApp API. Nenda kwenye "Mipangilio" kuiweka.
+                    ⚠️ Hujaweka Namba yako ya WhatsApp API. Nenda kwenye "Mipangilio" kuiweka, au kamilisha Usajili wa Meta.
                   </div>
 
                   <div class="form-group"><label>Jina la Kampeni (Kwa Kumbukumbu)</label><input type="text" v-model="campaignName" class="form-control" placeholder="Mfano: Ofa ya Pasaka" :disabled="isSending" /></div>
@@ -196,6 +209,9 @@
                    
                    <button v-if="userData?.walletBalance < (parsedContacts.length * 84)" class="btn-primary full-width mt-4 bg-danger" disabled>
                      ⚠️ Salio Lako Halitoshi
+                   </button>
+                   <button v-else-if="!userData?.whatsappPhoneId" class="btn-primary full-width mt-4 bg-warning text-dark" disabled>
+                     ⚠️ Kamilisha Usajili wa Meta
                    </button>
                    <button v-else class="btn-primary full-width mt-4" :disabled="parsedContacts.length === 0 || isSending || !campaignName || !templateNameInput" @click="sendBulkSMS">
                      <span v-if="isSending" class="loader-small"></span><span v-else>🚀 Tuma SMS Sasa</span>
@@ -297,12 +313,12 @@
                 <div class="chat-input-area">
                   <button class="chat-action-btn">😀</button>
                   <button class="chat-action-btn">📎</button>
-                  <input type="text" v-model="newChatMessage" placeholder="Jibu mteja hapa (TZS 30)..." @keyup.enter="sendLiveMessage" :disabled="isSendingChat || userData?.walletBalance < 30" />
+                  <input type="text" v-model="newChatMessage" placeholder="Jibu mteja hapa (TZS 30)..." @keyup.enter="sendLiveMessage" :disabled="isSendingChat || userData?.walletBalance < 30 || !userData?.whatsappPhoneId" />
                   
                   <button v-if="userData?.walletBalance < 30" class="send-msg-btn bg-danger" disabled title="Salio Halitoshi">
                      <span style="font-size:10px; font-weight: bold; line-height: 1;">TZS</span>
                   </button>
-                  <button v-else class="send-msg-btn" @click="sendLiveMessage" :disabled="!newChatMessage.trim() || isSendingChat">
+                  <button v-else class="send-msg-btn" @click="sendLiveMessage" :disabled="!newChatMessage.trim() || isSendingChat || !userData?.whatsappPhoneId">
                     <span v-if="isSendingChat" class="loader-small" style="width: 15px; height: 15px;"></span>
                     <svg v-else viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M1.101 21.757L23.8 12.028 1.101 2.3l.011 7.912 13.623 1.816-13.623 1.817-.011 7.912z"></path></svg>
                   </button>
@@ -328,7 +344,8 @@
                  <p class="text-muted">Taarifa zako za siri zinazolindwa na Mfumo wa Meta.</p>
               </div>
               
-              <div v-if="userData?.whatsappPhoneId && userData?.wabaId" class="locked-box mt-4">
+              <!-- IKIWA MTEJA AMEKAMILISHA SETUP -->
+              <div v-if="userData?.whatsappPhoneId && userData?.wabaId" class="locked-box mt-4 border-success">
                  <span class="badge-live mb-3">Live & Connected ⚡</span>
                  
                  <div class="api-detail-group">
@@ -352,13 +369,16 @@
               </div>
 
               <!-- IKIWA MTEJA ALIRUKA SETUP YAKE YA WABA KULE FACEBOOK -->
-              <div v-else class="locked-box bg-warning-light mt-4">
-                 <div class="lock-icon text-warning">⚠️</div>
-                 <h4 class="text-warning-dark">Setup Haijakamilika</h4>
-                 <p class="text-left mt-3">
-                    Inaonekana hukuweza kumaliza zoezi la kuunganisha namba yako ya WhatsApp kupitia dirisha la Facebook ulipokuwa unajisajili. <br><br>
-                    Tafadhali <strong>Toka nje ya Mfumo (Logout)</strong> kisha ingia tena kwa kutumia kitufe cha "Endelea na Facebook" na ufuate maelekezo yote hadi mwisho.
+              <div v-else class="locked-box bg-warning-light mt-4" style="border: 1px solid #fbbf24;">
+                 <div class="lock-icon" style="font-size: 3rem; margin-bottom: 15px;">⚠️</div>
+                 <h3 class="text-warning-dark" style="font-weight: 800; font-size: 1.4rem;">Setup Haijakamilika</h3>
+                 <p class="text-left mt-3" style="color: #92400e; font-size: 0.95rem; line-height: 1.6;">
+                    Inaonekana hukuweza kumaliza zoezi la kuunganisha namba yako ya WhatsApp kupitia dirisha la Facebook ulipokuwa unajisajili. Au pengine ulikataa kutoa baadhi ya ruhusa. <br><br>
+                    Tafadhali <strong>Toka nje ya Mfumo (Logout)</strong> kisha ingia tena kwa kutumia kitufe cha "Endelea na Facebook" na ufuate maelekezo yote hadi mwisho. Hakikisha unatengeneza Akaunti ya WhatsApp na kuthibitisha (Verify) namba ya simu.
                  </p>
+                 <button class="btn-primary mt-4 full-width bg-warning-dark" @click="$emit('logout')">
+                   Toka Mfumo na Ujaribu Upya &rarr;
+                 </button>
               </div>
 
             </div>
@@ -699,7 +719,8 @@ onUnmounted(() => {
 .topup-btn:hover { background: white; color: #059669; }
 .user-card { display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; }
 .avatar { width: 40px; height: 40px; background: #4f46e5; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.2rem; }
-.user-info h4 { font-size: 0.9rem; margin-bottom: 2px;} .user-info p { font-size: 0.75rem; color: #94a3b8; }
+.user-info h4 { font-size: 0.9rem; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;} 
+.user-info p { font-size: 0.75rem; color: #94a3b8; }
 .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 /* TOPBAR NA BEJI MPYA YA API STATUS */
@@ -725,7 +746,8 @@ onUnmounted(() => {
 .welcome-banner { background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); border-radius: 20px; padding: 40px; color: white; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;}
 .banner-text h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 10px; }
 .btn-banner { background: white; color: #4f46e5; border: none; padding: 12px 25px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.3s;}
-.btn-banner:hover { transform: translateY(-2px); }
+.btn-banner:hover:not(:disabled) { transform: translateY(-2px); }
+.btn-banner:disabled { background: #cbd5e1; cursor: not-allowed; transform: none;}
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
 .stat-card { background: white; padding: 25px; border-radius: 16px; display: flex; align-items: center; gap: 20px; border: 1px solid #e2e8f0; transition: transform 0.3s, box-shadow 0.3s; }
 .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
@@ -749,7 +771,7 @@ onUnmounted(() => {
 .btn-primary { display: flex; justify-content: center; align-items: center; background: #4f46e5; color: white; border: none; padding: 14px; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: 0.3s;}
 .btn-primary:hover:not(:disabled) { background: #4338ca; transform: translateY(-2px);}
 .btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; transform: none;}
-.bg-danger { background: #ef4444 !important; }
+.bg-warning-dark { background: #d97706; } .bg-warning-dark:hover { background: #b45309; }
 
 /* ======== CSS YA LIVE CHAT ======== */
 .chat-layout { display: flex; background: white; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0; height: calc(100vh - 160px); padding: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.05);}
@@ -802,7 +824,6 @@ onUnmounted(() => {
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
 
 .enc-alert { background: #ffeecd; color: #54656f; font-size: 0.8rem; text-align: center; padding: 8px 15px; border-radius: 10px; align-self: center; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
-.bg-success { background: #ecfdf5 !important; border: 1px solid #a7f3d0;}
 .date-divider { text-align: center; margin: 15px 0; }
 .date-divider span { background: #ffffff; color: #54656f; font-size: 0.8rem; padding: 6px 12px; border-radius: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); font-weight: 600;}
 
@@ -824,9 +845,7 @@ onUnmounted(() => {
 .send-msg-btn:hover:not(:disabled) { background: #019071; }
 .send-msg-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 
-.loader-small { display: inline-block; border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid white; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
-
-/* ======== CSS MPYA YA MIPANGILIO (SETTINGS) ======== */
+/* ======== CSS MPYA YA MIPANGILIO NA ALERTS ======== */
 .settings-card { max-width: 650px; margin: 0 auto; padding: 40px;}
 .locked-box { border: 1px solid #e2e8f0; background: #ffffff; padding: 30px; border-radius: 16px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.03); }
 .bg-warning-light { background: #fffbeb; border-color: #fde68a; }
@@ -835,8 +854,14 @@ onUnmounted(() => {
 .api-detail-group { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px 20px; border-radius: 12px; display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
 .detail-label { font-size: 0.8rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;}
 .detail-value { font-size: 1.1rem; font-weight: 800;}
+
+.alert-box { padding: 14px 16px; border-radius: 12px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: flex-start; gap: 10px; }
+.alert-box .a-icon { font-size: 1.2rem; }
 .alert-box.info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
-.text-left { text-align: left; }
+.alert-box.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.btn-text-small { background: none; border: none; color: #b45309; font-weight: 800; text-decoration: underline; cursor: pointer; padding: 0;}
+
+.border-success { border: 2px solid #10b981 !important; }
 
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(10px); }
