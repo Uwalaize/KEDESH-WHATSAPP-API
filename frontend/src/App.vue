@@ -67,7 +67,7 @@
                 <div class="privacy-meta">
                   <span class="badge">Kedesh Bulk SMS</span>
                   <span class="dot hide-mobile">•</span>
-                  <span class="date">Imesasishwa: 10 Juni 2026</span>
+                  <span class="date">Imesasishwa: 13 Julai 2026</span>
                 </div>
               </div>
               
@@ -107,11 +107,17 @@
               </transition>
               <transition name="slide-down">
                 <div v-if="authError" class="alert-box error">
-                  <span class="a-icon">🔒</span> {{ authError }}
+                  <span class="a-icon">⚠️</span> {{ authError }}
+                </div>
+              </transition>
+              <transition name="slide-down">
+                <div v-if="authWarning" class="alert-box warning">
+                  <span class="a-icon">⚡</span> {{ authWarning }}
                 </div>
               </transition>
 
               <div class="facebook-auth-section">
+                <!-- 🔥 Kitufe cha Embedded Signup Wizard 🔥 -->
                 <button @click="loginWithFacebook" type="button" class="btn-facebook" :disabled="isLoading">
                   <span v-if="isLoading && isFacebookAuth" class="loader"></span>
                   <span v-else class="fb-content">
@@ -309,6 +315,7 @@ const isFacebookAuth = ref(false);
 const justRegistered = ref(false);
 const passError = ref(false);
 const authError = ref('');
+const authWarning = ref(''); // Imeongezwa kwa ajili ya kuonya (Soft Warning)
 
 const showPrivacy = ref(false);
 
@@ -338,6 +345,7 @@ const toggleMode = () => {
   isLogin.value = !isLogin.value; 
   step.value = 1; 
   authError.value = ''; 
+  authWarning.value = '';
   justRegistered.value = false; 
   closePrivacy(); 
 };
@@ -350,11 +358,12 @@ const nextStep = () => {
   if (step.value < 3) step.value++;
 };
 
-// 🔥 FACEBOOK EMBEDDED SIGNUP WIZARD LOGIC 🔥
+// 🔥 FACEBOOK EMBEDDED SIGNUP WIZARD LOGIC (TECH PROVIDER MECHANISM) 🔥
 const loginWithFacebook = () => {
   isLoading.value = true;
   isFacebookAuth.value = true;
   authError.value = '';
+  authWarning.value = '';
 
   if (!window.FB) {
     isLoading.value = false;
@@ -363,32 +372,35 @@ const loginWithFacebook = () => {
     return;
   }
 
-  // TUNAITA DIRISHA LA WHATSAPP EMBEDDED SIGNUP WIZARD
+  // TUNAITA DIRISHA LA META YENYE SCOPE ZA TECH PROVIDER
   window.FB.login((response) => {
     if (response.authResponse) {
-      // Tunadaka CODE badala ya Access Token ya kawaida
+      // Tunadaka CODE yenye ruhusa zote za mteja
       const code = response.authResponse.code || response.authResponse.accessToken;
       processFacebookAuth(code);
     } else {
       isLoading.value = false;
       isFacebookAuth.value = false;
-      authError.value = "Umesitisha zoezi la kuunganisha WABA akaunti yako.";
+      authWarning.value = "Umesitisha zoezi la kuunganisha WABA akaunti yako katikati. Unaweza kujaribu tena.";
     }
   }, {
-    config_id: '1550680676648524',
+    config_id: '1550680676648524', // Meta Config ID ya Kedesh
     response_type: 'code', 
     override_default_response_type: true,
-    // 🔥 HAPA TUNAILAZIMISHA META IFUNGUE WHATSAPP WIZARD YENYE KUULIZA NAMBA 🔥
+    // 🔥 HAPA TUNAILAZIMISHA META IFUNGUE WHATSAPP WIZARD YENYE KUULIZA NAMBA KWA WATEJA WAPYA 🔥
+    scope: 'public_profile,email,whatsapp_business_management,whatsapp_business_messaging',
     extras: {
       feature: 'whatsapp_embedded_signup',
-      setup: {}
+      setup: {
+        skip_login_check: true // Inasaidia kuzuia mteja kukwama mapema sana
+      }
     }
   });
 };
 
 const processFacebookAuth = async (code) => {
   try {
-    // Tunatuma hiyo "code" kwenye backend yetu
+    // Tunatuma hiyo "code" kwenye backend yetu ili ilete WABA na Phone ID
     const res = await axios.post(`${API_URL}/facebook-login`, { accessToken: code });
     
     if(res.data.success) {
@@ -399,6 +411,8 @@ const processFacebookAuth = async (code) => {
       isFacebookAuth.value = false;
       isRedirecting.value = true; 
       
+      // Hata kama mteja hakusajili namba (WABA == null), server.js itamruhusu 
+      // lakini Dashibodi ndiyo itakayomwambia asajili namba (Graceful Fallback)
       setTimeout(() => {
         isRedirecting.value = false;
         isAuthenticated.value = true; 
@@ -407,7 +421,7 @@ const processFacebookAuth = async (code) => {
   } catch (error) {
     isLoading.value = false;
     isFacebookAuth.value = false;
-    authError.value = error.response?.data?.error || "Kuna shida imejitokeza kuunganisha mfumo na Meta. Tafadhali jaribu tena.";
+    authError.value = error.response?.data?.error || "Kuna shida imejitokeza kuunganisha mfumo na Meta. Hakikisha akaunti yako inaruhusu usajili.";
   }
 };
 
@@ -422,7 +436,7 @@ const completeRegistration = async () => {
     justRegistered.value = true; isLogin.value = true; step.value = 1; closePrivacy();
     regForm.phone = ''; regForm.password = ''; regForm.confirmPassword = '';
   } catch (error) {
-    authError.value = error.response?.data?.error || "Kosa la kimtandao limejitokeza.";
+    authError.value = error.response?.data?.error || "Kosa la kimtandao limejitokeza wakati wa usajili.";
   } finally { isLoading.value = false; }
 };
 
@@ -547,6 +561,7 @@ const logout = () => {
 .success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
 .error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
 .info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+.warning { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; } /* CSS Mpya ya Warning */
 
 .input-group { margin-bottom: 1.5rem; }
 .input-group label { display: block; font-size: 0.9rem; font-weight: 700; color: #334155; margin-bottom: 8px; text-align: left;}
