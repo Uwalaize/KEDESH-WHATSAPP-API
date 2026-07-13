@@ -1,6 +1,7 @@
 <template>
   <transition name="page-fade" mode="out-in">
     
+    <!-- DASHBOARD COMPONENT -->
     <Dashboard 
       v-if="isAuthenticated && !isRedirecting" 
       key="dashboard" 
@@ -8,6 +9,7 @@
       @logout="logout" 
     />
 
+    <!-- REDIRECTING SCREEN (PREMIUM LOADER) -->
     <div v-else-if="isRedirecting" key="redirect" class="redirect-screen">
       <div class="redirect-content">
         <div class="success-check">✅</div>
@@ -23,8 +25,10 @@
       </div>
     </div>
 
+    <!-- AUTHENTICATION (LOGIN/REGISTER) SCREEN -->
     <div v-else key="auth" class="auth-container">
       
+      <!-- BRAND SIDE (LEFT) -->
       <div class="brand-side">
         <div class="glow-orb orb-1"></div>
         <div class="glow-orb orb-2"></div>
@@ -56,10 +60,12 @@
         </div>
       </div>
 
+      <!-- FORM SIDE (RIGHT) -->
       <div class="form-side">
         <div class="form-wrapper" :class="{ 'wide-wrapper': showPrivacy }">
           <transition name="fade-slide" mode="out-in">
             
+            <!-- PRIVACY POLICY VIEW -->
             <div v-if="showPrivacy" key="privacy" class="glass-card privacy-card">
               <div class="privacy-header">
                 <div class="header-icon">🛡️</div>
@@ -93,6 +99,7 @@
               </div>
             </div>
 
+            <!-- LOGIN VIEW -->
             <div v-else-if="isLogin" key="login" class="glass-card">
               <div class="form-header">
                 <div class="header-icon">👋</div>
@@ -100,6 +107,7 @@
                 <p>Unganisha biashara yako moja kwa moja kupitia Meta au ingia na namba yako.</p>
               </div>
               
+              <!-- ALERTS -->
               <transition name="slide-down">
                 <div v-if="justRegistered" class="alert-box success">
                   <span class="a-icon">✅</span> Usajili umekamilika! Ingia kwenye mfumo sasa.
@@ -107,7 +115,7 @@
               </transition>
               <transition name="slide-down">
                 <div v-if="authError" class="alert-box error">
-                  <span class="a-icon">⚠️</span> {{ authError }}
+                  <span class="a-icon">❌</span> {{ authError }}
                 </div>
               </transition>
               <transition name="slide-down">
@@ -116,8 +124,8 @@
                 </div>
               </transition>
 
+              <!-- 🔥 FACEBOOK EMBEDDED SIGNUP BUTTON 🔥 -->
               <div class="facebook-auth-section">
-                <!-- 🔥 Kitufe cha Embedded Signup Wizard 🔥 -->
                 <button @click="loginWithFacebook" type="button" class="btn-facebook" :disabled="isLoading">
                   <span v-if="isLoading && isFacebookAuth" class="loader"></span>
                   <span v-else class="fb-content">
@@ -131,6 +139,7 @@
                 </div>
               </div>
 
+              <!-- MANUAL LOGIN FORM -->
               <form @submit.prevent="handleLogin" class="auth-form">
                 <div class="input-group">
                   <label>Namba ya Simu (WhatsApp)</label>
@@ -170,6 +179,7 @@
               </div>
             </div>
 
+            <!-- REGISTER VIEW -->
             <div v-else key="register" class="glass-card">
               <div class="form-header">
                 <div class="header-icon">🚀</div>
@@ -315,7 +325,7 @@ const isFacebookAuth = ref(false);
 const justRegistered = ref(false);
 const passError = ref(false);
 const authError = ref('');
-const authWarning = ref(''); // Imeongezwa kwa ajili ya kuonya (Soft Warning)
+const authWarning = ref(''); 
 
 const showPrivacy = ref(false);
 
@@ -358,7 +368,7 @@ const nextStep = () => {
   if (step.value < 3) step.value++;
 };
 
-// 🔥 FACEBOOK EMBEDDED SIGNUP WIZARD LOGIC (TECH PROVIDER MECHANISM) 🔥
+// 🔥 SAHIHI NA IMARA 100%: FACEBOOK EMBEDDED SIGNUP WIZARD LOGIC (TECH PROVIDER) 🔥
 const loginWithFacebook = () => {
   isLoading.value = true;
   isFacebookAuth.value = true;
@@ -372,10 +382,10 @@ const loginWithFacebook = () => {
     return;
   }
 
-  // TUNAITA DIRISHA LA META YENYE SCOPE ZA TECH PROVIDER
+  // TUNAITA DIRISHA LA META YENYE SCOPE ZA TECH PROVIDER ILI KUZUIA ERROR
   window.FB.login((response) => {
     if (response.authResponse) {
-      // Tunadaka CODE yenye ruhusa zote za mteja
+      // Tunadaka "code" yenye idhini na taarifa za mteja
       const code = response.authResponse.code || response.authResponse.accessToken;
       processFacebookAuth(code);
     } else {
@@ -387,7 +397,7 @@ const loginWithFacebook = () => {
     config_id: '1550680676648524', // Meta Config ID ya Kedesh
     response_type: 'code', 
     override_default_response_type: true,
-    // 🔥 HAPA TUNAILAZIMISHA META IFUNGUE WHATSAPP WIZARD YENYE KUULIZA NAMBA KWA WATEJA WAPYA 🔥
+    // 🔥 SCOPES HIZI NI LAZIMA KWA TECH PROVIDER ILI MTEJA ASIKATALIWE 🔥
     scope: 'public_profile,email,whatsapp_business_management,whatsapp_business_messaging',
     extras: {
       feature: 'whatsapp_embedded_signup',
@@ -400,7 +410,6 @@ const loginWithFacebook = () => {
 
 const processFacebookAuth = async (code) => {
   try {
-    // Tunatuma hiyo "code" kwenye backend yetu ili ilete WABA na Phone ID
     const res = await axios.post(`${API_URL}/facebook-login`, { accessToken: code });
     
     if(res.data.success) {
@@ -411,8 +420,8 @@ const processFacebookAuth = async (code) => {
       isFacebookAuth.value = false;
       isRedirecting.value = true; 
       
-      // Hata kama mteja hakusajili namba (WABA == null), server.js itamruhusu 
-      // lakini Dashibodi ndiyo itakayomwambia asajili namba (Graceful Fallback)
+      // Ikiwa mteja aliruka usajili wa namba, bado anaingia kwenye Dashboard.
+      // Kule ndani kwenye Dashboard.vue ndiko atakutana na onyo (Alert).
       setTimeout(() => {
         isRedirecting.value = false;
         isAuthenticated.value = true; 
@@ -421,7 +430,7 @@ const processFacebookAuth = async (code) => {
   } catch (error) {
     isLoading.value = false;
     isFacebookAuth.value = false;
-    authError.value = error.response?.data?.error || "Kuna shida imejitokeza kuunganisha mfumo na Meta. Hakikisha akaunti yako inaruhusu usajili.";
+    authError.value = error.response?.data?.error || "Kuna shida imejitokeza kuunganisha mfumo na Meta. Tafadhali jaribu tena.";
   }
 };
 
@@ -480,6 +489,7 @@ const logout = () => {
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
 
+/* ======== REDIRECT SCREEN (PREMIUM LOADER) ======== */
 .redirect-screen { display: flex; height: 100vh; width: 100vw; background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); justify-content: center; align-items: center; color: white;}
 .redirect-content { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 450px; padding: 20px;}
 .success-check { font-size: 5rem; margin-bottom: 20px; animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;}
@@ -495,6 +505,7 @@ const logout = () => {
 .page-fade-enter-from { opacity: 0; transform: scale(0.98); }
 .page-fade-leave-to { opacity: 0; transform: scale(1.02); }
 
+/* ======== MAIN AUTH LAYOUT ======== */
 .auth-container { display: flex; min-height: 100vh; width: 100vw; background: #f0f4f8; overflow-x: hidden; }
 
 .brand-side { flex: 1; background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); color: white; padding: 4rem; position: relative; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
@@ -503,6 +514,7 @@ const logout = () => {
 .form-wrapper { width: 100%; max-width: 440px; transition: max-width 0.4s ease; margin: 0 auto; } 
 .wide-wrapper { max-width: 700px; } 
 
+/* ======== BRANDING & ANIMATIONS ======== */
 .animated-glow { position: absolute; border-radius: 50%; filter: blur(100px); z-index: 1; opacity: 0.5; animation: float 10s ease-in-out infinite alternate; }
 .glow-1 { width: 450px; height: 450px; background: #4f46e5; top: -100px; left: -100px; }
 .glow-2 { width: 350px; height: 350px; background: #10b981; bottom: -50px; right: -50px; animation-delay: 3s;}
@@ -522,14 +534,15 @@ const logout = () => {
 .links a:hover { color: white; text-decoration: underline;}
 .dot { margin: 0 10px; opacity: 0.5;}
 
-.glass-card { background: white; padding: 3rem 2.5rem; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08); border: 1px solid rgba(226, 232, 240, 0.8); width: 100%;}
+/* ======== CARDS & FORMS ======== */
+.glass-card { background: white; padding: 3rem 2.5rem; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08); border: 1px solid rgba(226, 232, 240, 0.8); width: 100%; transition: all 0.3s ease;}
 .form-header { text-align: center; margin-bottom: 2.5rem; }
 .header-icon { font-size: 3.5rem; margin-bottom: 10px; display: inline-block; animation: wave 2.5s infinite; transform-origin: 70% 70%; }
 @keyframes wave { 0% { transform: rotate(0deg); } 10% { transform: rotate(14deg); } 20% { transform: rotate(-8deg); } 30% { transform: rotate(14deg); } 40% { transform: rotate(-4deg); } 50% { transform: rotate(10deg); } 60%, 100% { transform: rotate(0deg); } }
 .form-header h2 { font-size: 1.8rem; font-weight: 800; color: #0f172a; margin-bottom: 5px; }
 .form-header p { color: #64748b; font-size: 0.95rem; }
 
-/* 🔥 FACEBOOK BUTTON STYLES 🔥 */
+/* 🔥 FACEBOOK BUTTON STYLES (PREMIUM) 🔥 */
 .facebook-auth-section { margin-bottom: 1.5rem; width: 100%; }
 .btn-facebook { width: 100%; background: #1877F2; color: white; padding: 16px; border-radius: 12px; border: none; font-size: 1.05rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(24, 119, 242, 0.3); transition: all 0.3s ease; display: flex; justify-content: center; align-items: center; }
 .btn-facebook:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(24, 119, 242, 0.4); background: #166fe5; }
@@ -538,31 +551,15 @@ const logout = () => {
 .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #e2e8f0; }
 .divider span { padding: 0 15px; }
 
-/* PRIVACY POLICY */
-.privacy-card { padding: 2.5rem 3rem !important; display: flex; flex-direction: column; max-height: 85vh; }
-.privacy-header { border-bottom: 1px solid #e2e8f0; padding-bottom: 1.5rem; margin-bottom: 1.5rem; text-align: center; flex-shrink: 0;}
-.privacy-header h2 { font-size: 1.6rem; color: #0f172a; font-weight: 800; margin: 10px 0 5px 0;}
-.privacy-meta { display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 0.85rem; color: #64748b; flex-wrap: wrap;}
-.badge { background: #e0e7ff; color: #4f46e5; padding: 4px 10px; border-radius: 20px; font-weight: 700;}
-.privacy-content { overflow-y: auto; padding-right: 15px; text-align: left; }
-.custom-scrollbar::-webkit-scrollbar { width: 6px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px;}
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-.p-section { margin-bottom: 1.8rem; }
-.p-section h3 { font-size: 1.1rem; color: #0f172a; margin-bottom: 10px; font-weight: 800; }
-.p-section p, .p-section ul { font-size: 0.95rem; color: #475569; line-height: 1.7; margin-bottom: 10px;}
-.p-section ul { padding-left: 20px; }
-.p-section li { margin-bottom: 8px; }
-.contact-box { background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px dashed #cbd5e1; margin-top: 10px;}
-.w-100 { width: 100%; justify-content: center; }
-
-/* FORMS & ALERTS */
-.alert-box { padding: 14px 16px; border-radius: 12px; margin-bottom: 20px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+/* ======== ALERTS ======== */
+.alert-box { padding: 14px 16px; border-radius: 12px; margin-bottom: 20px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: flex-start; gap: 10px; text-align: left; box-shadow: 0 2px 10px rgba(0,0,0,0.02);}
+.alert-box .a-icon { font-size: 1.2rem; }
 .success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
 .error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; } 
 .info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
-.warning { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; } /* CSS Mpya ya Warning */
 
+/* ======== INPUTS ======== */
 .input-group { margin-bottom: 1.5rem; }
 .input-group label { display: block; font-size: 0.9rem; font-weight: 700; color: #334155; margin-bottom: 8px; text-align: left;}
 .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -579,6 +576,7 @@ const logout = () => {
 .modern-input::placeholder { color: #94a3b8; font-weight: 400;}
 .input-icon { padding: 0 10px 0 15px; font-size: 1.2rem; color: #64748b; }
 
+/* ======== BUTTONS ======== */
 button { cursor: pointer; border-radius: 12px; font-size: 1.05rem; font-weight: 700; border: none; transition: all 0.3s ease; display: flex; justify-content: center; align-items: center; gap: 8px;}
 .btn-primary { width: 100%; background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); color: white; padding: 18px; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3); }
 .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4); }
@@ -599,6 +597,7 @@ button { cursor: pointer; border-radius: 12px; font-size: 1.05rem; font-weight: 
 .loader { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid white; border-radius: 50%; width: 22px; height: 22px; animation: spin 1s linear infinite; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+/* ======== MISC & PRIVACY POLICY ======== */
 .switch-mode { margin-top: 2.5rem; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 2rem; }
 .switch-mode p { color: #64748b; font-size: 0.95rem; margin-bottom: 10px; }
 .stepper { width: 100%; height: 8px; background: #f1f5f9; border-radius: 10px; margin-bottom: 2rem; overflow: hidden; }
@@ -613,6 +612,22 @@ button { cursor: pointer; border-radius: 12px; font-size: 1.05rem; font-weight: 
 .s-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0;}
 .terms-text { text-align: center; color: #64748b; font-size: 0.85rem;}
 
+.privacy-card { padding: 2.5rem 3rem !important; display: flex; flex-direction: column; max-height: 85vh; }
+.privacy-header { border-bottom: 1px solid #e2e8f0; padding-bottom: 1.5rem; margin-bottom: 1.5rem; text-align: center; flex-shrink: 0;}
+.privacy-header h2 { font-size: 1.6rem; color: #0f172a; font-weight: 800; margin: 10px 0 5px 0;}
+.privacy-meta { display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 0.85rem; color: #64748b; flex-wrap: wrap;}
+.badge { background: #e0e7ff; color: #4f46e5; padding: 4px 10px; border-radius: 20px; font-weight: 700;}
+.privacy-content { overflow-y: auto; padding-right: 15px; text-align: left; }
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px;}
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.p-section { margin-bottom: 1.8rem; }
+.p-section h3 { font-size: 1.1rem; color: #0f172a; margin-bottom: 10px; font-weight: 800; }
+.p-section p, .p-section ul { font-size: 0.95rem; color: #475569; line-height: 1.7; margin-bottom: 10px;}
+.p-section ul { padding-left: 20px; }
+.p-section li { margin-bottom: 8px; }
+.contact-box { background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px dashed #cbd5e1; margin-top: 10px;}
+
 .fade-slide-enter-active, .fade-slide-leave-active { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
 .fade-slide-enter-from { opacity: 0; transform: scale(0.95) translateY(20px); }
 .fade-slide-leave-to { opacity: 0; transform: scale(1.05) translateY(-20px); }
@@ -625,6 +640,7 @@ button { cursor: pointer; border-radius: 12px; font-size: 1.05rem; font-weight: 
 .mobile-privacy-link { display: none; margin-top: 15px; font-size: 0.95rem; }
 .mobile-privacy-link a { color: #4f46e5; text-decoration: underline; font-weight: 700;}
 
+/* ======== RESPONSIVENESS ======== */
 @media (max-width: 992px) {
   .auth-container { flex-direction: column; height: auto; overflow-y: auto; }
   .brand-side { padding: 3rem 1.5rem; flex: none; text-align: center; align-items: center; }
