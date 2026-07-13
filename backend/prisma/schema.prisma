@@ -8,7 +8,7 @@ datasource db {
 }
 
 // ==================================================
-// 1. JEDWALI LA WAFANYABIASHARA (SaaS Users / Wamiliki)
+// 🏢 1. JEDWALI LA WAFANYABIASHARA (SaaS Tenants)
 // ==================================================
 model Business {
   id               String     @id @default(uuid())
@@ -19,7 +19,7 @@ model Business {
   phone            String?    @unique 
   password         String?    
   
-  // 🔥 TAARIFA MPYA ZA FACEBOOK / META AUTH
+  // 🔥 TAARIFA ZA FACEBOOK / META AUTH
   facebookId       String?    @unique 
   wabaId           String?    // WhatsApp Business Account ID
   
@@ -28,16 +28,23 @@ model Business {
   metaAccessToken  String?    
   walletBalance    Float      @default(0.0) 
   
+  // Mahusiano
   contacts         Contact[]
   messages         Message[]
   campaigns        Campaign[]
   
+  // Timestamps
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
+
+  // Indexes kwa utendaji wa haraka
+  @@index([phone])
+  @@index([facebookId])
+  @@index([wabaId])
 }
 
 // ==================================================
-// 2. JEDWALI LA WATEJA WAO (Contacts / Wanaopokea SMS)
+// 👥 2. JEDWALI LA WATEJA (Contacts / Wanaopokea SMS)
 // ==================================================
 model Contact {
   id          String    @id @default(uuid())
@@ -47,16 +54,22 @@ model Contact {
   name        String?
   phoneNumber String    // Mfano: 255712345678 (Bila + )
   
+  // Mahusiano
   messages    Message[]
   
+  // Timestamps
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Tunazuia namba moja isijirudie kwa mfanyabiashara yule yule
-  @@unique([businessId, phoneNumber]) 
+  @@unique([businessId, phoneNumber])
+  
+  // 🔥 Index kwa kasi ya kutafuta wateja wa business fulani
+  @@index([businessId])
 }
 
 // ==================================================
-// 3. JEDWALI LA MESEJI (Kwa ajili ya Live Chat & History)
+// 💬 3. JEDWALI LA MESEJI (Live Chat & SMS History)
 // ==================================================
 model Message {
   id          String    @id @default(uuid())
@@ -66,16 +79,28 @@ model Message {
   contactId   String
   contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
   
-  metaMsgId   String?   @unique // ID inatoka WhatsApp kujua kama SMS imefika
+  // 🔥🔥🔥 HII NDIO SIRI YA UPSERT KUFANYA KAZI! 🔥🔥🔥
+  // metaMsgId inatoka WhatsApp - inahakikisha hakuna duplicate messages
+  metaMsgId   String?   @unique
+  
   direction   String    // 'INBOUND' (Mteja katuma) au 'OUTBOUND' (Biashara imetuma)
   content     String    // Ujumbe wenyewe
-  status      String    @default("SENT") // SENT, DELIVERED, READ, FAILED
+  status      String    @default("SENT") // PENDING, SENT, DELIVERED, READ, FAILED, RECEIVED
+  messageType String?   @default("text") // text, template, button, interactive, nk.
   
+  // Timestamps
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // 🔥 Index kwa ajili ya Live Chat na Dashboard Stats
+  @@index([businessId, contactId])
+  @@index([businessId, direction])
+  @@index([businessId, status])
+  @@index([metaMsgId])
 }
 
 // ==================================================
-// 4. JEDWALI LA KAMPENI ZA BULK SMS
+// 📊 4. JEDWALI LA KAMPENI ZA BULK SMS
 // ==================================================
 model Campaign {
   id            String   @id @default(uuid())
@@ -84,8 +109,18 @@ model Campaign {
   
   campaignName  String   // Mfano: "Ofa ya Sabasaba"
   templateName  String   // Jina la template ya Meta API
-  status        String   @default("PENDING") // PENDING, PROCESSING, COMPLETED
+  templateLang  String   @default("sw") // Lugha ya template
+  status        String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
   totalContacts Int      @default(0)
+  successCount  Int      @default(0) // Zilizotumwa kikamilifu
+  failedCount   Int      @default(0) // Zilizofeli
   
+  // Timestamps
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // 🔥 Index kwa ajili ya historia ya kampeni na dashboard
+  @@index([businessId])
+  @@index([businessId, status])
+  @@index([createdAt])
 }
