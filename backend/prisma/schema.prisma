@@ -15,17 +15,14 @@ model Business {
   businessName     String
   fullName         String     
   
-  // Imekuwa optional (String?) kuruhusu wanaosajili kwa Facebook
-  phone            String?    @unique 
-  password         String?    
+  phone            String?    @unique
+  password         String?
   
-  // 🔥 TAARIFA ZA FACEBOOK / META AUTH
-  facebookId       String?    @unique 
-  wabaId           String?    // WhatsApp Business Account ID
-  
-  // Taarifa za WhatsApp API kutoka Meta
+  // TAARIFA ZA FACEBOOK / META AUTH
+  facebookId       String?    @unique
+  wabaId           String?    
   whatsappPhoneId  String?
-  metaAccessToken  String?    
+  metaAccessToken  String?   
   walletBalance    Float      @default(0.0) 
   
   // Mahusiano
@@ -33,9 +30,9 @@ model Business {
   messages         Message[]
   campaigns        Campaign[]
   
-  // Timestamps
+  // Timestamps (🔥 KINGA IMEONGEZWA HAPA)
   createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  updatedAt        DateTime   @default(now()) @updatedAt
 
   // Indexes kwa utendaji wa haraka
   @@index([phone])
@@ -52,19 +49,16 @@ model Contact {
   business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   
   name        String?
-  phoneNumber String    // Mfano: 255712345678 (Bila + )
+  phoneNumber String    
   
   // Mahusiano
   messages    Message[]
   
-  // Timestamps
+  // Timestamps (🔥 KINGA IMEONGEZWA HAPA KUZUIA NULL ERROR)
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  updatedAt   DateTime  @default(now()) @updatedAt
 
-  // Tunazuia namba moja isijirudie kwa mfanyabiashara yule yule
   @@unique([businessId, phoneNumber])
-  
-  // 🔥 Index kwa kasi ya kutafuta wateja wa business fulani
   @@index([businessId])
 }
 
@@ -79,20 +73,18 @@ model Message {
   contactId   String
   contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
   
-  // 🔥🔥🔥 HII NDIO SIRI YA UPSERT KUFANYA KAZI! 🔥🔥🔥
   // metaMsgId inatoka WhatsApp - inahakikisha hakuna duplicate messages
   metaMsgId   String?   @unique
   
-  direction   String    // 'INBOUND' (Mteja katuma) au 'OUTBOUND' (Biashara imetuma)
-  content     String    // Ujumbe wenyewe
-  status      String    @default("SENT") // PENDING, SENT, DELIVERED, READ, FAILED, RECEIVED
-  messageType String?   @default("text") // text, template, button, interactive, nk.
+  direction   String    
+  content     String    
+  status      String    @default("SENT") 
+  messageType String?   @default("text")
   
-  // Timestamps
+  // Timestamps (🔥 KINGA IMEONGEZWA HAPA)
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  updatedAt   DateTime  @default(now()) @updatedAt
 
-  // 🔥 Index kwa ajili ya Live Chat na Dashboard Stats
   @@index([businessId, contactId])
   @@index([businessId, direction])
   @@index([businessId, status])
@@ -107,19 +99,18 @@ model Campaign {
   businessId    String
   business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   
-  campaignName  String   // Mfano: "Ofa ya Sabasaba"
-  templateName  String   // Jina la template ya Meta API
-  templateLang  String   @default("sw") // Lugha ya template
-  status        String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  campaignName  String   
+  templateName  String   
+  templateLang  String   @default("sw") 
+  status        String   @default("PENDING") 
   totalContacts Int      @default(0)
-  successCount  Int      @default(0) // Zilizotumwa kikamilifu
-  failedCount   Int      @default(0) // Zilizofeli
+  successCount  Int      @default(0) 
+  failedCount   Int      @default(0) 
   
-  // Timestamps
+  // Timestamps (🔥 KINGA IMEONGEZWA HAPA)
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime @default(now()) @updatedAt
   
-  // 🔥 Index kwa ajili ya historia ya kampeni na dashboard
   @@index([businessId])
   @@index([businessId, status])
   @@index([createdAt])
