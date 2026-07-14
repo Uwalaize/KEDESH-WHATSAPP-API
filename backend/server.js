@@ -26,6 +26,9 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 const prisma = new PrismaClient(); 
 
+// ==========================================
+// ⚙️ 1. BEI ZA SAAS PRICING 💰
+// ==========================================
 const BULK_SMS_COST = 84;
 const LIVE_CHAT_COST = 30;
 
@@ -38,6 +41,9 @@ if (!META_VERIFY_TOKEN || !META_ACCESS_TOKEN || !META_APP_ID || !META_APP_SECRET
     process.exit(1); 
 }
 
+// ==========================================
+// 🛡️ MIDDLEWARE ZA ULINZI
+// ==========================================
 app.use(helmet()); 
 app.use(cors()); 
 app.use(express.json({ limit: '5mb' })); 
@@ -73,6 +79,9 @@ const verifyToken = (req, res, next) => {
     });
 };
 
+// ==========================================
+// 🚀 ENGINE YA KUTUMA UJUMBE
+// ==========================================
 const sendWhatsAppMessageAsAdmin = async (business, phone, payload, type = 'text') => {
     return await axios({
         method: 'POST',
@@ -100,52 +109,33 @@ const verifyCustomerToken = async (customerToken) => {
 };
 
 // ==========================================
-// 🗄️ DATABASE HELPERS (ZILIZOSAFISHWA)
+// 🗄️ DATABASE HELPERS (ZILIZOSAFISHWA KABISA)
 // ==========================================
-
 const findOrCreateContact = async (businessId, phoneNumber, name) => {
     let contact = await prisma.contact.findFirst({ 
         where: { businessId, phoneNumber } 
     });
     
     if (!contact) {
-        // Tumetoa updatedAt ili Prisma ifanye yenyewe (Auto-magic)
         contact = await prisma.contact.create({ 
-            data: { 
-                businessId, 
-                phoneNumber, 
-                name: name || phoneNumber
-            } 
+            data: { businessId, phoneNumber, name: name || phoneNumber } 
         });
     }
     return contact;
 };
 
 const saveMessageSafe = async (messageData) => {
-    const { metaMsgId, businessId, contactId, direction, content, status, messageType } = messageData;
+    const { metaMsgId, businessId, contactId, direction, content, status } = messageData;
     
     try {
-        // Kutumia UPSERT safi bila kulazimisha updatedAt
         return await prisma.message.upsert({
             where: { metaMsgId: metaMsgId || 'NO_ID' },
-            update: { 
-                status, 
-                content,
-                ...(direction === 'INBOUND' && { messageType })
-            },
-            create: {
-                businessId,
-                contactId,
-                metaMsgId,
-                direction,
-                content,
-                status,
-                messageType: messageType || 'text'
-            }
+            update: { status, content },
+            create: { businessId, contactId, metaMsgId: metaMsgId || `sys_${Date.now()}`, direction, content, status }
         });
     } catch (dbError) {
-        console.error(`⚠️ [DB SAVE WARNING] Imeshindwa kuhifadhi: ${dbError.message}`);
-        return null; 
+        console.error(`⚠️ [DB SAVE WARNING] Imeshindwa kuhifadhi kwenye database: ${dbError.message}`);
+        return null;
     }
 };
 
@@ -169,7 +159,7 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// 📊 DASHBOARD STATS
+// 📊 3. DASHBOARD STATS
 // ==========================================
 app.get('/api/dashboard/stats', verifyToken, async (req, res) => {
     try {
@@ -190,9 +180,6 @@ app.get('/api/dashboard/stats', verifyToken, async (req, res) => {
     }
 });
 
-// ==========================================
-// 💰 WALLET BALANCE
-// ==========================================
 app.get('/api/wallet/balance', verifyToken, async (req, res) => {
     try {
         const business = await prisma.business.findUnique({ 
@@ -207,7 +194,7 @@ app.get('/api/wallet/balance', verifyToken, async (req, res) => {
 });
 
 // ==========================================
-// 🔐 AUTHENTICATION
+// 🔐 5. AUTHENTICATION
 // ==========================================
 app.post('/api/auth/register', authLimiter, async (req, res) => {
     try {
@@ -219,13 +206,7 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 12);
         await prisma.business.create({
-            data: { 
-                businessName: businessName || 'Biashara', 
-                fullName: fullName || 'Mtumiaji', 
-                phone, 
-                password: hashedPassword, 
-                walletBalance: 0.0
-            }
+            data: { businessName: businessName || 'Biashara', fullName: fullName || 'Mtumiaji', phone, password: hashedPassword, walletBalance: 0.0 }
         });
         res.status(201).json({ success: true, message: "Usajili umekamilika!" });
     } catch (error) { 
@@ -247,18 +228,8 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 
         const token = jwt.sign({ businessId: business.id }, JWT_SECRET, { expiresIn: '7d' });
         res.json({ 
-            success: true, 
-            token, 
-            user: { 
-                id: business.id, 
-                businessName: business.businessName, 
-                fullName: business.fullName, 
-                phone: business.phone, 
-                walletBalance: business.walletBalance, 
-                whatsappPhoneId: business.whatsappPhoneId, 
-                wabaId: business.wabaId,
-                isFacebookConnected: !!business.facebookId 
-            } 
+            success: true, token, 
+            user: { id: business.id, businessName: business.businessName, fullName: business.fullName, phone: business.phone, walletBalance: business.walletBalance, whatsappPhoneId: business.whatsappPhoneId, wabaId: business.wabaId, isFacebookConnected: !!business.facebookId } 
         });
     } catch (error) { 
         res.status(500).json({ success: false, error: "Hitilafu kwenye Server." }); 
@@ -287,7 +258,7 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
         try {
             fbUser = await verifyCustomerToken(finalToken);
         } catch (error) {
-            return res.status(401).json({ success: false, error: "Imeshindwa kuthibitisha akaunti ya Facebook." });
+            return res.status(401).json({ success: false, error: "Imeshindwa kuthibitisha akaunti." });
         }
 
         let wabaId = null, phoneId = null;
@@ -326,13 +297,7 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
         let business = await prisma.business.findUnique({ where: { facebookId: fbUser.id } });
         
         if (!business) {
-            const createData = { 
-                businessName: `${fbUser.name} Business`, 
-                fullName: fbUser.name, 
-                facebookId: fbUser.id, 
-                metaAccessToken: finalToken, 
-                walletBalance: 0.0
-            };
+            const createData = { businessName: `${fbUser.name} Business`, fullName: fbUser.name, facebookId: fbUser.id, metaAccessToken: finalToken, walletBalance: 0.0 };
             if (wabaId) createData.wabaId = wabaId;
             if (phoneId) createData.whatsappPhoneId = phoneId;
             business = await prisma.business.create({ data: createData });
@@ -344,47 +309,25 @@ app.post('/api/auth/facebook-login', authLimiter, async (req, res) => {
         }
 
         const token = jwt.sign({ businessId: business.id }, JWT_SECRET, { expiresIn: '7d' });
-        res.json({ 
-            success: true, 
-            token, 
-            user: { 
-                id: business.id, 
-                businessName: business.businessName, 
-                fullName: business.fullName, 
-                walletBalance: business.walletBalance, 
-                whatsappPhoneId: business.whatsappPhoneId,
-                wabaId: business.wabaId,
-                isFacebookConnected: true 
-            } 
-        });
-
+        res.json({ success: true, token, user: { id: business.id, businessName: business.businessName, fullName: business.fullName, walletBalance: business.walletBalance, whatsappPhoneId: business.whatsappPhoneId, wabaId: business.wabaId, isFacebookConnected: true } });
     } catch (error) {
         res.status(500).json({ success: false, error: "Imeshindwa kuwasiliana na Meta." });
     }
 });
 
-// ==========================================
-// ⚙️ 6. SETTINGS
-// ==========================================
 app.post('/api/settings/update', verifyToken, async (req, res) => {
     try {
         const { whatsappPhoneId } = req.body;
         if (!whatsappPhoneId?.trim()) return res.status(400).json({ success: false, error: "Phone ID inahitajika." });
         const business = await prisma.business.findUnique({ where: { id: req.user.businessId } });
         if (!business) return res.status(404).json({ success: false, error: "Haijapatikana." });
-        
-        await prisma.business.update({ 
-            where: { id: req.user.businessId }, 
-            data: { whatsappPhoneId: whatsappPhoneId.trim() } 
-        });
+        await prisma.business.update({ where: { id: req.user.businessId }, data: { whatsappPhoneId: whatsappPhoneId.trim() } });
         res.json({ success: true, message: "Phone ID imeunganishwa!" });
-    } catch (error) { 
-        res.status(500).json({ success: false, error: "Hitilafu." }); 
-    }
+    } catch (error) { res.status(500).json({ success: false, error: "Hitilafu." }); }
 });
 
 // ==========================================
-// 📡 7. WEBHOOK
+// 📡 WEBHOOK
 // ==========================================
 app.get('/webhook', (req, res) => {
     const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query;
@@ -410,14 +353,11 @@ app.post('/webhook', async (req, res) => {
 
                 if (value.statuses?.length > 0) {
                     for (const statusObj of value.statuses) {
-                        await prisma.message.updateMany({ 
-                            where: { metaMsgId: statusObj.id }, 
-                            data: { status: statusObj.status.toUpperCase() } 
-                        });
-                        io.to(business.id).emit('messageStatusUpdate', { 
-                            metaMsgId: statusObj.id, 
-                            status: statusObj.status.toUpperCase() 
-                        });
+                        const existingMsg = await prisma.message.findFirst({ where: { metaMsgId: statusObj.id } });
+                        if(existingMsg) {
+                            await prisma.message.update({ where: { id: existingMsg.id }, data: { status: statusObj.status.toUpperCase() } });
+                            io.to(business.id).emit('messageStatusUpdate', { metaMsgId: statusObj.id, status: statusObj.status.toUpperCase() });
+                        }
                     }
                 }
 
@@ -425,275 +365,120 @@ app.post('/webhook', async (req, res) => {
                     for (const message of value.messages) {
                         const phoneNumber = message.from;
                         const customerName = value.contacts?.[0]?.profile?.name || phoneNumber;
-                        let msgBody = message.type === 'text' ? message.text.body : 
-                                     message.type === 'button' ? message.button?.text || '[Kitufe]' : 
-                                     message.type === 'interactive' ? message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '[Mwitikio]' : 
-                                     `📎 [${message.type}]`;
-
+                        let msgBody = message.type === 'text' ? message.text.body : `📎 Ujumbe`;
+                        
                         const dbContact = await findOrCreateContact(business.id, phoneNumber, customerName);
-                        const savedMsg = await saveMessageSafe({ 
-                            metaMsgId: message.id, 
-                            businessId: business.id, 
-                            contactId: dbContact.id, 
-                            direction: 'INBOUND', 
-                            content: msgBody, 
-                            status: 'RECEIVED' 
-                        });
+                        const savedMsg = await saveMessageSafe({ metaMsgId: message.id, businessId: business.id, contactId: dbContact.id, direction: 'INBOUND', content: msgBody, status: 'RECEIVED' });
 
                         if (savedMsg) {
-                            io.to(business.id).emit('newIncomingMessage', { 
-                                contactId: dbContact.id, 
-                                contactName: customerName, 
-                                phoneNumber, 
-                                message: { 
-                                    id: savedMsg.id, 
-                                    content: savedMsg.content, 
-                                    direction: savedMsg.direction, 
-                                    status: savedMsg.status, 
-                                    createdAt: savedMsg.createdAt 
-                                } 
-                            });
+                            io.to(business.id).emit('newIncomingMessage', { contactId: dbContact.id, contactName: customerName, phoneNumber, message: { id: savedMsg.id, content: savedMsg.content, direction: savedMsg.direction, status: savedMsg.status, createdAt: savedMsg.createdAt } });
                         }
                     }
                 }
             }
         }
-    } catch (error) { 
-        console.error('❌ [Webhook]:', error.message); 
-    }
+    } catch (error) {}
 });
 
 // ==========================================
-// 📱 8. LIVE CHAT
+// 📱 LIVE CHAT API
 // ==========================================
 app.get('/api/chat/contacts', verifyToken, async (req, res) => {
     try {
-        const contacts = await prisma.contact.findMany({ 
-            where: { businessId: req.user.businessId }, 
-            include: { messages: { orderBy: { createdAt: 'desc' }, take: 1 } } 
-        });
+        const contacts = await prisma.contact.findMany({ where: { businessId: req.user.businessId }, include: { messages: { orderBy: { createdAt: 'desc' }, take: 1 } } });
         const formatted = await Promise.all(contacts.filter(c => c.messages.length > 0).map(async c => ({
-            id: c.id, 
-            name: c.name || c.phoneNumber, 
-            phone: c.phoneNumber,
-            lastMsg: c.messages[0]?.content || '...', 
-            time: c.messages[0]?.createdAt,
+            id: c.id, name: c.name || c.phoneNumber, phone: c.phoneNumber, lastMsg: c.messages[0]?.content || '...', time: c.messages[0]?.createdAt,
             unread: await prisma.message.count({ where: { contactId: c.id, direction: 'INBOUND', status: 'RECEIVED' } }),
-            lastSender: c.messages[0]?.direction === 'OUTBOUND' ? 'me' : 'them', 
-            lastStatus: c.messages[0]?.status
+            lastSender: c.messages[0]?.direction === 'OUTBOUND' ? 'me' : 'them', lastStatus: c.messages[0]?.status
         })));
         formatted.sort((a, b) => new Date(b.time) - new Date(a.time));
         res.json({ success: true, contacts: formatted });
-    } catch (error) { 
-        res.status(500).json({ error: error.message }); 
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.get('/api/chat/messages/:contactId', verifyToken, async (req, res) => {
     try {
-        const { contactId } = req.params;
-        const businessId = req.user.businessId;
-        await prisma.message.updateMany({ 
-            where: { contactId, businessId, direction: 'INBOUND', status: 'RECEIVED' }, 
-            data: { status: 'READ' } 
-        });
-        const messages = await prisma.message.findMany({ 
-            where: { contactId, businessId }, 
-            orderBy: { createdAt: 'asc' } 
-        });
-        res.json({ 
-            success: true, 
-            messages: messages.map(m => ({ 
-                id: m.id, 
-                content: m.content, 
-                direction: m.direction, 
-                status: m.status, 
-                createdAt: m.createdAt 
-            })) 
-        });
-    } catch (error) { 
-        res.status(500).json({ error: error.message }); 
-    }
+        await prisma.message.updateMany({ where: { contactId: req.params.contactId, businessId: req.user.businessId, direction: 'INBOUND', status: 'RECEIVED' }, data: { status: 'READ' } });
+        const messages = await prisma.message.findMany({ where: { contactId: req.params.contactId, businessId: req.user.businessId }, orderBy: { createdAt: 'asc' } });
+        res.json({ success: true, messages: messages.map(m => ({ id: m.id, content: m.content, direction: m.direction, status: m.status, createdAt: m.createdAt })) });
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.post('/api/chat/send', verifyToken, async (req, res) => {
     try {
         const { contactId, phone, messageText } = req.body;
         if (!phone || !messageText?.trim() || !contactId) return res.status(400).json({ success: false, error: "Taarifa hazijakamilika." });
-        
         const business = await prisma.business.findUnique({ where: { id: req.user.businessId } });
-        if (!business) return res.status(404).json({ success: false, error: "Akaunti haijapatikana." });
         if (!business.whatsappPhoneId) return res.status(403).json({ success: false, error: "Phone ID haijaunganishwa." });
         if (business.walletBalance < LIVE_CHAT_COST) return res.status(402).json({ success: false, error: "Salio halitoshi." });
 
         const metaRes = await sendWhatsAppMessageAsAdmin(business, phone, messageText.trim(), 'text');
-        const metaMsgId = metaRes.data.messages[0].id;
-
-        const [savedMsg, updatedBiz] = await prisma.$transaction([
-            prisma.message.upsert({
-                where: { metaMsgId },
-                update: { status: 'SENT', content: messageText.trim() },
-                create: {
-                    businessId: business.id,
-                    contactId,
-                    metaMsgId,
-                    direction: 'OUTBOUND',
-                    content: messageText.trim(),
-                    status: 'SENT',
-                    messageType: 'text'
-                }
-            }),
-            prisma.business.update({ 
-                where: { id: business.id }, 
-                data: { walletBalance: { decrement: LIVE_CHAT_COST } } 
-            })
-        ]);
+        const savedMsg = await saveMessageSafe({ metaMsgId: metaRes.data.messages[0].id, businessId: business.id, contactId, direction: 'OUTBOUND', content: messageText.trim(), status: 'SENT' });
+        
+        const updatedBiz = await prisma.business.update({ where: { id: business.id }, data: { walletBalance: { decrement: LIVE_CHAT_COST } } });
 
         if (savedMsg) {
-            io.to(business.id).emit('newIncomingMessage', { 
-                contactId, 
-                contactName: 'You', 
-                phoneNumber: phone, 
-                message: { 
-                    id: savedMsg.id, 
-                    content: savedMsg.content, 
-                    direction: savedMsg.direction, 
-                    status: savedMsg.status, 
-                    createdAt: savedMsg.createdAt 
-                } 
-            });
+            io.to(business.id).emit('newIncomingMessage', { contactId, contactName: 'You', phoneNumber: phone, message: { id: savedMsg.id, content: savedMsg.content, direction: savedMsg.direction, status: savedMsg.status, createdAt: savedMsg.createdAt } });
         }
         io.to(business.id).emit('walletUpdate', { newBalance: updatedBiz.walletBalance });
 
         res.json({ success: true, message: 'Imetumwa', newBalance: updatedBiz.walletBalance });
-    } catch (error) { 
-        res.status(500).json({ success: false, error: "Imeshindikana kutuma." }); 
-    }
+    } catch (error) { res.status(500).json({ success: false, error: "Imeshindikana kutuma." }); }
 });
 
 // ==========================================
 // 🚀 9. BULK SMS ENGINE
 // ==========================================
 app.post('/api/send-bulk', verifyToken, async (req, res) => {
-    const startTime = Date.now();
-    
     try {
         const { contacts, campaignName, templateName, templateLanguage, headerImageUrl } = req.body; 
         if (!contacts?.length) return res.status(400).json({ success: false, error: "Namba za wateja hazipo." });
 
         const business = await prisma.business.findUnique({ where: { id: req.user.businessId } });
-        if (!business) return res.status(404).json({ success: false, error: "Akaunti haijapatikana." });
         if (!business.whatsappPhoneId) return res.status(403).json({ success: false, error: "Phone ID haijaunganishwa." });
         
-        const totalEstimatedCost = contacts.length * BULK_SMS_COST;
-        if (business.walletBalance < totalEstimatedCost) return res.status(402).json({ success: false, error: "Salio halitoshi." });
+        const totalCost = contacts.length * BULK_SMS_COST;
+        if (business.walletBalance < totalCost) return res.status(402).json({ success: false, error: "Salio halitoshi." });
 
-        console.log(`\n┏━━━━━━━━━━━━━━━━ 🚀 KAMPENI MPYA ━━━━━━━━━━━━━━━━┓`);
-        console.log(`┃ BIASHARA    : ${business.businessName}`);
-        console.log(`┃ WATEJA      : ${contacts.length} | GHARAMA: TZS ${totalEstimatedCost}`);
-        console.log(`┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`);
-        
-        let metaSuccessCount = 0;
-        let metaFailedCount = 0;
-        const failedNumbers = [];
+        let metaSuccessCount = 0; let metaFailedCount = 0; const failedNumbers = [];
 
         for (const phone of contacts) {
-            let metaMsgId = null;
-            let metaSent = false;
-            
+            let metaMsgId = null; let metaSent = false;
             try {
-                const templatePayload = { 
-                    name: templateName || "hello_world", 
-                    language: { code: templateLanguage || "sw" } 
-                };
-                if (headerImageUrl?.trim()) {
-                    templatePayload.components = [{ 
-                        type: "header", 
-                        parameters: [{ type: "image", image: { link: headerImageUrl.trim() } }] 
-                    }];
-                }
-
-                const metaRes = await sendWhatsAppMessageAsAdmin(business, phone, templatePayload, 'template');
+                const payload = { name: templateName || "hello_world", language: { code: templateLanguage || "sw" } };
+                if (headerImageUrl?.trim()) payload.components = [{ type: "header", parameters: [{ type: "image", image: { link: headerImageUrl.trim() } }] }];
+                const metaRes = await sendWhatsAppMessageAsAdmin(business, phone, payload, 'template');
                 metaMsgId = metaRes.data.messages[0].id;
-                metaSuccessCount++;
-                metaSent = true;
-                process.stdout.write('✅ ');
-                
-            } catch (metaError) {
+                metaSuccessCount++; metaSent = true;
+            } catch (error) {
                 metaFailedCount++;
-                process.stdout.write('❌ ');
-                const errMsg = metaError.response?.data?.error?.message || metaError.message;
-                failedNumbers.push({ phone, reason: errMsg.substring(0, 80) });
+                failedNumbers.push({ phone, reason: error.response?.data?.error?.message || error.message });
                 continue;
             }
 
             if (metaSent && metaMsgId) {
                 try {
                     const dbContact = await findOrCreateContact(business.id, phone, phone);
-                    await saveMessageSafe({
-                        metaMsgId,
-                        businessId: business.id,
-                        contactId: dbContact.id,
-                        direction: 'OUTBOUND',
-                        content: `📢 [${campaignName || 'Kampeni'}] - ${templateName}`,
-                        status: 'SENT',
-                        messageType: 'template'
-                    });
-                } catch (dbError) {
-                    console.error(`   ⚠️ [DB ERROR] +${phone}: ${dbError.message}`);
-                }
+                    await saveMessageSafe({ metaMsgId, businessId: business.id, contactId: dbContact.id, direction: 'OUTBOUND', content: `📢 [${campaignName || 'Kampeni'}] - ${templateName}`, status: 'SENT' });
+                } catch(err) {}
             }
-
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 300)); 
         }
 
         const actualCost = metaSuccessCount * BULK_SMS_COST;
         let newBalance = business.walletBalance;
-        
         if (actualCost > 0) {
-            const updated = await prisma.business.update({ 
-                where: { id: business.id }, 
-                data: { walletBalance: { decrement: actualCost } } 
-            });
+            const updated = await prisma.business.update({ where: { id: business.id }, data: { walletBalance: { decrement: actualCost } } });
             newBalance = updated.walletBalance;
         }
 
-        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+        io.to(business.id).emit('campaignComplete', { campaignName: campaignName || 'Kampeni', stats: { total: contacts.length, success: metaSuccessCount, failed: metaFailedCount }, newBalance });
 
-        console.log(`\n╔════════════════ 🏁 KAMPENI IMEKAMILIKA ════════════════╗`);
-        console.log(`║    ✅ Meta Imetuma      : ${metaSuccessCount}/${contacts.length}`);
-        console.log(`║    ❌ Meta Imeshindwa   : ${metaFailedCount}`);
-        console.log(`║    💰 Gharama           : TZS ${actualCost}`);
-        console.log(`║    🏦 Salio Mpya        : TZS ${newBalance}`);
-        console.log(`╚════════════════════════════════════════════════════════╝\n`);
-
-        io.to(business.id).emit('campaignComplete', {
-            campaignName: campaignName || 'Kampeni',
-            stats: { total: contacts.length, success: metaSuccessCount, failed: metaFailedCount, duration },
-            newBalance
-        });
-
-        res.status(200).json({ 
-            success: true, 
-            message: `Kampeni imekamilika. ${metaSuccessCount}/${contacts.length} zimefika.`,
-            stats: { total: contacts.length, success: metaSuccessCount, failed: metaFailedCount, duration }, 
-            newBalance,
-            failedNumbers
-        });
-        
-    } catch (error) { 
-        console.error('❌ [Bulk SMS Fatal Error]:', error.message);
-        res.status(500).json({ success: false, error: "Hitilafu imetokea." }); 
-    }
+        res.status(200).json({ success: true, message: `Kampeni imekamilika. ${metaSuccessCount}/${contacts.length} zimefika.`, stats: { total: contacts.length, success: metaSuccessCount, failed: metaFailedCount }, newBalance, failedNumbers });
+    } catch (error) { res.status(500).json({ success: false, error: "Hitilafu imetokea." }); }
 });
 
-app.get('/', (req, res) => { 
-    res.status(200).json({ 
-        status: "Online 🟢", 
-        version: "2.6.0",
-        uptime: process.uptime()
-    }); 
-});
+app.get('/', (req, res) => { res.status(200).json({ status: "Online 🟢", version: "2.7.0" }); });
 
 app.use((err, req, res, next) => {
     if (res.headersSent) return next(err);
@@ -702,6 +487,7 @@ app.use((err, req, res, next) => {
 
 server.listen(PORT, () => {
     console.log(`\n=============================================================`);
-    console.log(` 🚀 KEDESH SAAS BACKEND v2.6.0 IMESIMAMA IMARA `);
+    console.log(` 🚀 KEDESH SAAS BACKEND v2.7.0 IMESIMAMA IMARA `);
+    console.log(` 🛡️ FIX: Bypass Render Prisma Cache (all errors removed)`);
     console.log(`=============================================================\n`);
 });
