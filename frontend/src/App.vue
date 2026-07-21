@@ -447,7 +447,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import axios from 'axios';
 import Dashboard from './components/Dashboard.vue';
 
-const API_URL = 'https://apibulksms.kedeshlimited.com';
+const API_URL = 'https://apibulksms.kedeshlimited.com/api/auth';
 
 const countries = [
   { code: '255', flag: '🇹🇿', name: 'Tanzania' }, { code: '254', flag: '🇰🇪', name: 'Kenya' },
