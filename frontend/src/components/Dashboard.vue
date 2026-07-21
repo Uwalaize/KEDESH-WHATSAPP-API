@@ -748,7 +748,7 @@ const initSocket = () => {
         console.log('Audio not supported');
     }
 
-    socket = io("https://backend-bulk-sms.onrender.com", {
+    socket = io("https://apibulksms.kedeshlimited.com", {
         auth: { token: token },
         transports: ['websocket', 'polling']
     });
@@ -793,7 +793,7 @@ const initSocket = () => {
 
             if (!isMe) {
                 const token = localStorage.getItem('msamba_token');
-                axios.get(`https://backend-bulk-sms.onrender.com/api/chat/messages/${data.contactId}`, { 
+                axios.get(`https://apibulksms.kedeshlimited.com/api/chat/messages/${data.contactId}`, { 
                     headers: { Authorization: `Bearer ${token}` } 
                 }).catch(() => {});
             }
@@ -830,7 +830,7 @@ const fetchContactsSilent = async () => {
   try {
     const token = localStorage.getItem('msamba_token');
     if (!token) return;
-    const res = await axios.get('https://backend-bulk-sms.onrender.com/api/chat/contacts', { 
+    const res = await axios.get('https://apibulksms.kedeshlimited.com/api/chat/contacts', { 
         headers: { Authorization: `Bearer ${token}` } 
     });
     if(res.data.success) { 
@@ -858,7 +858,7 @@ const fetchDashboardStats = async (showLoader = true) => {
   try {
       const token = localStorage.getItem('msamba_token');
       if(!token) return;
-      const res = await axios.get('https://backend-bulk-sms.onrender.com/api/dashboard/stats', { 
+      const res = await axios.get('https://apibulksms.kedeshlimited.com/api/dashboard/stats', { 
           headers: { Authorization: `Bearer ${token}` } 
       });
       if(res.data.success) {
@@ -962,10 +962,11 @@ const sendBulkSMS = async () => {
 
    isSending.value = true; 
    sendReport.value = null;
+  
    
    try {
       const token = localStorage.getItem('msamba_token');
-      const res = await axios.post('https://backend-bulk-sms.onrender.com/api/send-bulk', { 
+      const res = await axios.post('https://apibulksms.kedeshlimited.com/api/send-bulk', { 
           contacts: parsedContacts.value, 
           campaignName: campaignName.value, 
           templateName: templateNameInput.value.trim(),
@@ -1032,7 +1033,7 @@ const fetchContacts = async () => {
   try {
     const token = localStorage.getItem('msamba_token');
     if(!token) return;
-    const res = await axios.get('https://backend-bulk-sms.onrender.com/api/chat/contacts', { 
+    const res = await axios.get('https://apibulksms.kedeshlimited.com/api/chat/contacts', { 
         headers: { Authorization: `Bearer ${token}` } 
     });
     if(res.data.success) { 
@@ -1049,7 +1050,7 @@ const fetchContacts = async () => {
 const fetchMessages = async (contactId) => {
   try {
     const token = localStorage.getItem('msamba_token');
-    const res = await axios.get(`https://backend-bulk-sms.onrender.com/api/chat/messages/${contactId}`, { 
+    const res = await axios.get(`https://apibulksms.kedeshlimited.com/api/chat/messages/${contactId}`, { 
         headers: { Authorization: `Bearer ${token}` } 
     });
     if(res.data.success) {
@@ -1102,7 +1103,7 @@ const sendLiveMessage = async () => {
 
   try {
     const token = localStorage.getItem('msamba_token');
-    const res = await axios.post('https://backend-bulk-sms.onrender.com/api/chat/send', {
+    const res = await axios.post('https://apibulksms.kedeshlimited.com/api/chat/send', {
       contactId: activeChat.value, 
       phone: currentActiveContact.value.phone, 
       messageText: textToSend
