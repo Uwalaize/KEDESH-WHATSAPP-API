@@ -107,7 +107,44 @@
                   <h3>1. Utangulizi</h3>
                   <p>Kedesh Limited ("sisi", "yetu") inamiliki na kuendesha mfumo wa Kedesh Bulk SMS. Tunathamini faragha yako na tumejitolea kulinda taarifa zako binafsi na za kibiashara. Sera hii inaeleza jinsi tunavyokusanya, kutumia, na kulinda data zako unapotumia mfumo wetu kupitia Facebook Login na WhatsApp Business API.</p>
                 </div>
-                <!-- ... Maelezo mengine ya Privacy yapo hapa (Hayajabadilika) ... -->
+                <div class="p-section">
+                  <h3>2. Taarifa Tunazokusanya</h3>
+                  <p>Tunakusanya taarifa zifuatazo unapojisajili au kutumia mfumo wetu:</p>
+                  <ul>
+                    <li><strong>Taarifa za Biashara:</strong> Jina la biashara, jina la mmiliki, namba ya simu ya WhatsApp.</li>
+                    <li><strong>Taarifa za Meta:</strong> Facebook ID, WhatsApp Business Account ID (WABA), Phone Number ID kupitia Facebook Login.</li>
+                    <li><strong>Data za Ujumbe:</strong> Metadata za ujumbe (status, timestamp) kwa ajili ya kuripoti. <strong>HATUSOMI wala kuhifadhi maudhui ya meseji za wateja wako.</strong></li>
+                  </ul>
+                </div>
+                <div class="p-section">
+                  <h3>3. Jinsi Tunavyotumia Data Zako</h3>
+                  <p>Data zako zinatumika kwa madhumuni yafuatayo pekee:</p>
+                  <ul>
+                    <li>Kukuwezesha kutuma na kupokea ujumbe wa WhatsApp kupitia mfumo wetu.</li>
+                    <li>Kukupa takwimu na ripoti za utendaji wa kampeni zako.</li>
+                    <li>Kusimamia akaunti yako na salio lako la wallet.</li>
+                    <li>Kuwasiliana nawe kuhusu masasisho ya mfumo au masuala ya kiufundi.</li>
+                  </ul>
+                </div>
+                <div class="p-section">
+                  <h3>4. Ulinzi wa Data</h3>
+                  <p>Tunatumia viwango vya juu vya usalama ikiwemo:</p>
+                  <ul>
+                    <li>Encryption ya 256-bit SSL/TLS kwa data zote zinazosafirishwa.</li>
+                    <li>Access tokens zimehifadhiwa kwa usimbaji fiche (hashing).</li>
+                    <li>Vikomo vya ufikiaji (rate limiting) kuzuia mashambulizi.</li>
+                    <li>Uhifadhi wa data kwenye seva salama zilizo na ulinzi wa kimwili na kidigitali.</li>
+                  </ul>
+                </div>
+                <div class="p-section">
+                  <h3>5. Haki Zako</h3>
+                  <p>Kama mtumiaji, una haki zifuatazo:</p>
+                  <ul>
+                    <li>Kufikia taarifa zako zote tulizohifadhi.</li>
+                    <li>Kuomba kufuta au kusahihisha data zako.</li>
+                    <li>Kuacha kutumia huduma yetu wakati wowote.</li>
+                  </ul>
+                </div>
                 <div class="p-section">
                   <h3>6. Mawasiliano</h3>
                   <p>Kama una swali lolote, tafadhali wasiliana nasi kupitia:</p>
@@ -166,8 +203,8 @@
                   <span class="badge-icon">🛡️</span> Meta Tech Provider Rasmi
                 </div>
                 
-                <button @click="loginWithFacebook" type="button" class="btn-facebook-massive" :disabled="isLoading">
-                  <span v-if="isLoading && isFacebookAuth" class="loader"></span>
+                <button @click="loginWithFacebook" type="button" class="btn-facebook-massive" :disabled="isLoading || !sdkLoaded">
+                  <span v-if="isLoading" class="loader"></span>
                   <span v-else class="fb-content-large">
                     <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
                       <path d="M12 2.04c-5.5 0-10 4.48-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 0 0 8.44-9.9c0-5.54-4.5-10.02-10-10.02Z"/>
@@ -175,7 +212,10 @@
                     Endelea na Facebook
                   </span>
                 </button>
-                <p class="fb-hint-large mt-4">
+                <p class="fb-hint-large mt-4" v-if="!sdkLoaded">
+                  ⏳ Inapakia mfumo salama wa Meta...
+                </p>
+                <p class="fb-hint-large mt-4" v-else>
                   Bofya kitufe hapo juu kuunganisha namba yako ya WhatsApp moja kwa moja bila kuhitaji kujaza fomu.
                 </p>
               </div>
@@ -208,15 +248,38 @@ const isAuthenticated = ref(false);
 const isRedirecting = ref(false);
 const currentUser = ref(null);
 const isLoading = ref(false);
-const isFacebookAuth = ref(false); 
+const sdkLoaded = ref(false);
 const authError = ref('');
 const authWarning = ref(''); 
 const showPrivacy = ref(false);
 
 onMounted(() => {
+  // 1. Kuhakikisha Privacy inafanya kazi
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('privacy') === 'true' || window.location.hash.includes('privacy')) {
     showPrivacy.value = true;
+  }
+
+  // 2. TUNAINGIZA FACEBOOK SDK (v20.0) KWA NGUVU KUEPUKA CACHE
+  if (window.FB) {
+    sdkLoaded.value = true;
+  } else {
+    window.fbAsyncInit = function() {
+      window.FB.init({
+        appId      : '860384560467802', // App ID ya Kedesh SMS
+        cookie     : true,
+        xfbml      : true,
+        version    : 'v20.0' // LAZIMA IWE v20.0 KWA EMBEDDED SIGNUP
+      });
+      sdkLoaded.value = true;
+    };
+    (function(d, s, id){
+       var js, fjs = d.getElementsByTagName(s)[0];
+       if (d.getElementById(id)) {return;}
+       js = d.createElement(s); js.id = id;
+       js.src = "https://connect.facebook.net/en_US/sdk.js";
+       fjs.parentNode.insertBefore(js, fjs);
+     }(document, 'script', 'facebook-jssdk'));
   }
 });
 
@@ -232,58 +295,52 @@ const closePrivacy = () => {
 
 const loginWithFacebook = () => {
   isLoading.value = true;
-  isFacebookAuth.value = true;
   authError.value = '';
   authWarning.value = '';
 
   if (!window.FB) {
     isLoading.value = false;
-    isFacebookAuth.value = false;
     authError.value = "Mfumo wa Meta haujakamilika kufunguka. Tafadhali refresh ukurasa na ujaribu tena.";
     return;
   }
 
+  // 🔥 TUNAITA EMBEDDED SIGNUP IKIWA NA 'CODE' PEKEE 🔥
   window.FB.login((response) => {
     if (response.authResponse) {
-      // Chukua 'code' moja kwa moja kwa sababu ndicho tulichoomba (response_type: 'code')
+      // Tunachukua 'code' pekee kama Meta anavyotaka kwenye Embedded Signup Flow
       const authCode = response.authResponse.code;
       
       if(authCode) {
         processFacebookAuth(authCode); 
       } else {
-        // Fallback endapo atarudisha accessToken
+        // Fallback endapo SDK itarudisha accessToken kimakosa
         const accessToken = response.authResponse.accessToken;
         if(accessToken) {
             processFacebookAuth(accessToken);
         } else {
             isLoading.value = false;
-            isFacebookAuth.value = false;
-            authError.value = "Hakuna code iliyopokelewa kutoka Meta.";
+            authError.value = "Kosa la kimtandao limejitokeza kutoka Meta. Tafadhali jaribu tena.";
         }
       }
     } else {
       isLoading.value = false;
-      isFacebookAuth.value = false;
       authWarning.value = "Umesitisha zoezi la kuunganisha akaunti yako. Unaweza kujaribu tena unapokuwa tayari.";
     }
   }, {
     config_id: '1031132115961861', 
-    response_type: 'code', // Imerekebishwa toka 'token,code' kuepuka ile error
-    override_default_response_type: true,
+    response_type: 'code', // HII NDIYO INAYOZUIA ERROR YAKO
+    override_default_response_type: true, // Inalazimisha SDK isitumie 'token'
     extras: {
-      sessionInfoVersion: "3",
-      version: "v4"
+      sessionInfoVersion: "3"
     }
   });
 };
 
-// Tunapokea data ambayo inaweza kuwa 'code' au 'accessToken' na kuituma DigitalOcean
 const processFacebookAuth = async (authData) => {
   try {
     const res = await axios.post(`${API_URL}/facebook-login`, { 
-        // Tunatuma data yoyote tuliyopata. Kama backend inategemea jina tofauti, irekebishe hapa.
-        accessToken: authData, 
-        authCode: authData 
+        authCode: authData,
+        accessToken: authData // Tunatuma kote ili Backend ikamate kile inachohitaji
     });
     
     if(res.data.success) {
@@ -291,7 +348,6 @@ const processFacebookAuth = async (authData) => {
       currentUser.value = res.data.user; 
       
       isLoading.value = false;
-      isFacebookAuth.value = false;
       isRedirecting.value = true; 
       
       setTimeout(() => {
@@ -301,7 +357,6 @@ const processFacebookAuth = async (authData) => {
     }
   } catch (error) {
     isLoading.value = false;
-    isFacebookAuth.value = false;
     authError.value = error.response?.data?.error || "Kuna shida imejitokeza kuunganisha mfumo na Meta. Tafadhali jaribu tena.";
   }
 };
@@ -328,16 +383,7 @@ const logout = () => {
 }
 
 /* ======== REDIRECT SCREEN ======== */
-.redirect-screen { 
-  display: flex; 
-  height: 100vh; 
-  width: 100%;
-  background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); 
-  justify-content: center; 
-  align-items: center; 
-  color: white;
-}
-
+.redirect-screen { display: flex; height: 100vh; width: 100%; background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); justify-content: center; align-items: center; color: white; }
 .redirect-content { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 450px; padding: 20px; }
 .success-animation { margin-bottom: 24px; }
 .checkmark { width: 80px; height: 80px; border-radius: 50%; display: block; stroke-width: 3; stroke: #10b981; stroke-miterlimit: 10; animation: scaleCheck 0.5s ease-in-out 0.3s both; }
@@ -349,12 +395,10 @@ const logout = () => {
 
 .redirect-title { font-size: 2.4rem; font-weight: 800; color: #f8fafc; margin-bottom: 10px; letter-spacing: -0.5px; }
 .redirect-text { color: #94a3b8; font-size: 1.15rem; margin-bottom: 35px; }
-
 .loader-bar-container { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin: 0 auto 20px auto; overflow: hidden; }
 .loader-progress { height: 100%; background: linear-gradient(90deg, #4f46e5, #10b981, #4f46e5); background-size: 200% 100%; width: 0%; border-radius: 10px; animation: loadBar 2.5s ease-in-out forwards, shimmer 2s infinite; }
 @keyframes loadBar { 0% { width: 0%; } 100% { width: 100%; } }
 @keyframes shimmer { 0% { background-position: 0% 0%; } 100% { background-position: 200% 0%; } }
-
 .secure-badge-redirect { display: flex; align-items: center; gap: 10px; color: #10b981; font-size: 0.9rem; font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 12px 24px; border-radius: 30px; border: 1px solid rgba(16, 185, 129, 0.2); }
 
 .page-fade-enter-active, .page-fade-leave-active { transition: opacity 0.5s ease, transform 0.5s ease; }
@@ -362,13 +406,7 @@ const logout = () => {
 .page-fade-leave-to { opacity: 0; transform: scale(1.02); }
 
 /* ======== MAIN AUTH LAYOUT ======== */
-.auth-container { 
-  display: flex; 
-  min-height: 100vh; 
-  width: 100%; 
-  background: #f0f4f8; 
-  overflow-x: hidden; 
-}
+.auth-container { display: flex; min-height: 100vh; width: 100%; background: #f0f4f8; overflow-x: hidden; }
 
 /* ======== BRAND SIDE ======== */
 .brand-side { flex: 1; background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); color: white; padding: 4rem; position: relative; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
@@ -392,7 +430,6 @@ const logout = () => {
 .stat-number { font-size: 1.5rem; font-weight: 800; color: #f8fafc; }
 .stat-label { font-size: 0.8rem; color: #94a3b8; font-weight: 500; }
 .stat-divider-vertical { width: 1px; height: 40px; background: rgba(255, 255, 255, 0.15); }
-
 .brand-bottom { display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; color: #64748b; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 20px; }
 .links a { color: #94a3b8; text-decoration: none; transition: 0.3s; font-weight: 600; }
 .links a:hover { color: white; text-decoration: underline; }
@@ -473,35 +510,24 @@ const logout = () => {
 .mobile-privacy-link a:hover { text-decoration: underline; }
 
 /* ======== 100% RESPONSIVENESS MEDIA QUERIES ======== */
-
-/* Kompyuta za kati na Laptops */
 @media (max-width: 1200px) {
   .hero-title { font-size: 2.8rem; }
   .brand-side { padding: 3rem; }
   .form-side { padding: 1.5rem; }
 }
 
-/* Tablets (iPad) na Laptops ndogo */
 @media (max-width: 992px) {
   .auth-container { flex-direction: column; height: auto; min-height: 100vh; overflow-y: auto; }
-  .brand-side { 
-    padding: 3rem 1.5rem 2rem; 
-    flex: none; 
-    text-align: center; 
-    align-items: center; 
-  }
+  .brand-side { padding: 3rem 1.5rem 2rem; flex: none; text-align: center; align-items: center; }
   .brand-content { min-height: auto; justify-content: center; gap: 1.5rem; }
   .brand-top .logo { margin: 0 auto 1rem; }
-  
   .glow-orb { filter: blur(80px); }
   .orb-1 { width: 300px; height: 300px; top: -50px; left: -50px; }
   .orb-2 { width: 200px; height: 200px; bottom: 0; right: 0; }
-  
   .desktop-only { display: none; } 
   .hero-title { font-size: 2.4rem; margin-top: 1rem; }
   .subtitle { max-width: 100%; font-size: 1.05rem; margin-bottom: 1.5rem; }
   .stats-mini { justify-content: center; }
-  
   .form-side { padding: 1rem 1rem 3rem; align-items: flex-start; }
   .glass-card { max-width: 500px; margin: 0 auto; width: 100%; padding: 2.5rem 2rem; }
   .premium-login-card { padding: 3rem 2rem; }
@@ -509,29 +535,23 @@ const logout = () => {
   .wide-wrapper { max-width: 100%; }
 }
 
-/* Simu Kubwa na Tablets ndogo */
 @media (max-width: 768px) {
   .hero-title { font-size: 2rem; }
   .stats-mini { gap: 15px; }
 }
 
-/* Simu za Kawaida (Mobile) */
 @media (max-width: 576px) {
   .hero-title { font-size: 1.8rem; }
   .subtitle { font-size: 0.95rem; }
-  
   .stats-mini { flex-wrap: wrap; gap: 10px; }
   .stat-item { width: 45%; } 
   .stat-divider-vertical { display: none; } 
-  
   .glass-card { padding: 2rem 1.2rem; border-radius: 16px; }
   .premium-login-card { padding: 2.5rem 1.2rem; }
   .form-header h2 { font-size: 1.6rem; }
-  
   .btn-facebook-massive { font-size: 1.05rem; padding: 16px; border-radius: 12px; }
   .fb-content-large svg { width: 24px; height: 24px; }
   .fb-hint-large { font-size: 0.85rem; }
-  
   .privacy-card { padding: 1.2rem !important; }
 }
 </style>
