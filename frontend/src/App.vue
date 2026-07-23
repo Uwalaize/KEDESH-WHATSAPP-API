@@ -245,11 +245,21 @@ const loginWithFacebook = () => {
 
   window.FB.login((response) => {
     if (response.authResponse) {
-      const accessToken = response.authResponse.accessToken;
-      if(accessToken) {
-        processFacebookAuth(accessToken);
+      // Chukua 'code' moja kwa moja kwa sababu ndicho tulichoomba (response_type: 'code')
+      const authCode = response.authResponse.code;
+      
+      if(authCode) {
+        processFacebookAuth(authCode); 
       } else {
-        processFacebookAuth(response.authResponse.code); 
+        // Fallback endapo atarudisha accessToken
+        const accessToken = response.authResponse.accessToken;
+        if(accessToken) {
+            processFacebookAuth(accessToken);
+        } else {
+            isLoading.value = false;
+            isFacebookAuth.value = false;
+            authError.value = "Hakuna code iliyopokelewa kutoka Meta.";
+        }
       }
     } else {
       isLoading.value = false;
@@ -258,7 +268,7 @@ const loginWithFacebook = () => {
     }
   }, {
     config_id: '1031132115961861', 
-    response_type: 'token,code',
+    response_type: 'code', // Imerekebishwa toka 'token,code' kuepuka ile error
     override_default_response_type: true,
     extras: {
       sessionInfoVersion: "3",
@@ -267,9 +277,14 @@ const loginWithFacebook = () => {
   });
 };
 
-const processFacebookAuth = async (accessToken) => {
+// Tunapokea data ambayo inaweza kuwa 'code' au 'accessToken' na kuituma DigitalOcean
+const processFacebookAuth = async (authData) => {
   try {
-    const res = await axios.post(`${API_URL}/facebook-login`, { accessToken });
+    const res = await axios.post(`${API_URL}/facebook-login`, { 
+        // Tunatuma data yoyote tuliyopata. Kama backend inategemea jina tofauti, irekebishe hapa.
+        accessToken: authData, 
+        authCode: authData 
+    });
     
     if(res.data.success) {
       localStorage.setItem('msamba_token', res.data.token);
@@ -316,7 +331,7 @@ const logout = () => {
 .redirect-screen { 
   display: flex; 
   height: 100vh; 
-  width: 100%; /* Imebadilishwa toka 100vw kuzuia horizontal scroll */
+  width: 100%;
   background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); 
   justify-content: center; 
   align-items: center; 
@@ -350,7 +365,7 @@ const logout = () => {
 .auth-container { 
   display: flex; 
   min-height: 100vh; 
-  width: 100%; /* Imebadilishwa kuzuia overflow */
+  width: 100%; 
   background: #f0f4f8; 
   overflow-x: hidden; 
 }
@@ -478,7 +493,6 @@ const logout = () => {
   .brand-content { min-height: auto; justify-content: center; gap: 1.5rem; }
   .brand-top .logo { margin: 0 auto 1rem; }
   
-  /* Kupunguza nguvu ya orbs kwenye vifaa vidogo */
   .glow-orb { filter: blur(80px); }
   .orb-1 { width: 300px; height: 300px; top: -50px; left: -50px; }
   .orb-2 { width: 200px; height: 200px; bottom: 0; right: 0; }
@@ -506,7 +520,6 @@ const logout = () => {
   .hero-title { font-size: 1.8rem; }
   .subtitle { font-size: 0.95rem; }
   
-  /* Takwimu kujipanga vizuri kwenye simu */
   .stats-mini { flex-wrap: wrap; gap: 10px; }
   .stat-item { width: 45%; } 
   .stat-divider-vertical { display: none; } 
