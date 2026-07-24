@@ -406,10 +406,28 @@ const logout = () => {
 .page-fade-leave-to { opacity: 0; transform: scale(1.02); }
 
 /* ======== MAIN AUTH LAYOUT ======== */
-.auth-container { display: flex; min-height: 100vh; width: 100%; background: #f0f4f8; overflow-x: hidden; }
+/* MABADILIKO MAKUBWA: Badala ya 'min-height: 100vh', sasa inaruhusu scrolling asili kwenye mobile */
+.auth-container { 
+  display: flex; 
+  min-height: 100vh; 
+  width: 100%; 
+  background: #f0f4f8; 
+  overflow-x: hidden; 
+}
 
 /* ======== BRAND SIDE ======== */
-.brand-side { flex: 1; background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); color: white; padding: 4rem; position: relative; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+/* MABADILIKO: Ruhusu content kujitanua vyema */
+.brand-side { 
+  flex: 1; 
+  background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); 
+  color: white; 
+  padding: 4rem; 
+  position: relative; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: center; 
+  overflow: hidden; 
+}
 .brand-bg-pattern { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: radial-gradient(circle at 20% 80%, rgba(79, 70, 229, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.06) 0%, transparent 50%); z-index: 1; }
 .glow-orb { position: absolute; border-radius: 50%; filter: blur(120px); z-index: 1; opacity: 0.4; animation: float 12s ease-in-out infinite alternate; }
 .orb-1 { width: 450px; height: 450px; background: #4f46e5; top: -120px; left: -100px; }
@@ -517,8 +535,10 @@ const logout = () => {
 }
 
 @media (max-width: 992px) {
-  .auth-container { flex-direction: column; height: auto; min-height: 100vh; overflow-y: auto; }
-  .brand-side { padding: 3rem 1.5rem 2rem; flex: none; text-align: center; align-items: center; }
+  /* MABADILIKO: Inaachia container kuwa auto ili scroll ifanye kazi mpaka mwisho */
+  .auth-container { flex-direction: column; height: auto; min-height: 100vh; overflow-y: visible; }
+  
+  .brand-side { padding: 3rem 1.5rem 2rem; flex: none; text-align: center; align-items: center; min-height: auto; }
   .brand-content { min-height: auto; justify-content: center; gap: 1.5rem; }
   .brand-top .logo { margin: 0 auto 1rem; }
   .glow-orb { filter: blur(80px); }
@@ -528,7 +548,8 @@ const logout = () => {
   .hero-title { font-size: 2.4rem; margin-top: 1rem; }
   .subtitle { max-width: 100%; font-size: 1.05rem; margin-bottom: 1.5rem; }
   .stats-mini { justify-content: center; }
-  .form-side { padding: 1rem 1rem 3rem; align-items: flex-start; }
+  
+  .form-side { padding: 2rem 1rem 4rem; align-items: flex-start; min-height: auto; }
   .glass-card { max-width: 500px; margin: 0 auto; width: 100%; padding: 2.5rem 2rem; }
   .premium-login-card { padding: 3rem 2rem; }
   .privacy-card { padding: 1.5rem !important; max-height: none; } 
@@ -546,12 +567,16 @@ const logout = () => {
   .stats-mini { flex-wrap: wrap; gap: 10px; }
   .stat-item { width: 45%; } 
   .stat-divider-vertical { display: none; } 
-  .glass-card { padding: 2rem 1.2rem; border-radius: 16px; }
+  
+  /* Padding inaachiliwa zaidi chini ili card isijikate kwenye simu */
+  .form-side { padding: 1.5rem 1rem 5rem; }
+  .glass-card { padding: 2rem 1.2rem; border-radius: 16px; margin-bottom: 2rem; }
   .premium-login-card { padding: 2.5rem 1.2rem; }
+  
   .form-header h2 { font-size: 1.6rem; }
   .btn-facebook-massive { font-size: 1.05rem; padding: 16px; border-radius: 12px; }
   .fb-content-large svg { width: 24px; height: 24px; }
-  .fb-hint-large { font-size: 0.85rem; }
+  .fb-hint-large { font-size: 0.85rem; padding-bottom: 10px; }
   .privacy-card { padding: 1.2rem !important; }
 }
 </style>
