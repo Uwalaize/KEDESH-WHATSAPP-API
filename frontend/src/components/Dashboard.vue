@@ -1,6 +1,6 @@
 <template>
   <div class="dashboard-layout">
-    
+
     <!-- MODAL YA KUONGEZA SALIO (IMEBOreshWA) -->
     <transition name="fade">
       <div v-if="showTopupModal" class="modal-overlay" @click.self="showTopupModal = false">
@@ -18,7 +18,7 @@
             <p class="modal-description">
               Fanya malipo kupitia namba ya ofisi hapa chini. Baada ya muamala kukamilika, wasiliana na Admin ili kupandishiwa salio lako papo hapo.
             </p>
-            
+
             <div class="payment-methods">
               <div class="payment-method active">
                 <span class="method-icon">📱</span>
@@ -47,7 +47,7 @@
                 <p>Baada ya kutuma malipo, tafadhali wasiliana na Admin kupitia WhatsApp au simu ili kusasisha salio lako mara moja.</p>
               </div>
             </div>
-            
+
             <button class="btn-primary full-width mt-4" @click="showTopupModal = false">
               ✅ Sawa, Nimeelewa
             </button>
@@ -72,25 +72,25 @@
         <div class="nav-menu custom-scrollbar">
           <p class="menu-label">MENU KUU</p>
           <button :class="['nav-btn', { active: currentView === 'home' }]" @click="currentView = 'home'">
-            <span class="nav-icon">📊</span> 
+            <span class="nav-icon">📊</span>
             <span class="nav-text">Muhtasari</span>
             <span class="nav-arrow" v-if="currentView === 'home'">›</span>
           </button>
           <button :class="['nav-btn', { active: currentView === 'bulk' }]" @click="currentView = 'bulk'">
-            <span class="nav-icon">🚀</span> 
+            <span class="nav-icon">🚀</span>
             <span class="nav-text">Bulk SMS</span>
             <span class="nav-arrow" v-if="currentView === 'bulk'">›</span>
           </button>
           <button :class="['nav-btn', { active: currentView === 'chat' }]" @click="currentView = 'chat'">
-            <span class="nav-icon">💬</span> 
+            <span class="nav-icon">💬</span>
             <span class="nav-text">Live Chat</span>
             <span v-if="totalUnread > 0" class="unread-badge-sidebar">{{ totalUnread }}</span>
             <span class="nav-arrow" v-if="currentView === 'chat'">›</span>
           </button>
-          
+
           <p class="menu-label mt-4">MIPANGILIO</p>
           <button :class="['nav-btn', { active: currentView === 'settings' }]" @click="currentView = 'settings'">
-            <span class="nav-icon">⚙️</span> 
+            <span class="nav-icon">⚙️</span>
             <span class="nav-text">API & Akaunti</span>
             <span class="nav-arrow" v-if="currentView === 'settings'">›</span>
           </button>
@@ -107,7 +107,7 @@
               <span>➕</span> Weka Salio
             </button>
           </div>
-          
+
           <div class="user-profile-mini">
             <div class="user-avatar">{{ userData?.businessName?.charAt(0).toUpperCase() || 'K' }}</div>
             <div class="user-details">
@@ -141,7 +141,7 @@
             <span class="status-dot"></span>
             <span class="status-text">{{ isSocketConnected ? 'Live' : 'Offline' }}</span>
           </div>
-          
+
           <!-- API Status -->
           <div class="status-indicator" :class="(userData?.whatsappPhoneId && userData?.wabaId) ? 'connected' : 'warning'" title="Hali ya API ya WhatsApp">
             <span class="status-dot"></span>
@@ -161,10 +161,10 @@
 
       <div class="content-area custom-scrollbar">
         <transition name="fade-slide" mode="out-in">
-          
+
           <!-- ======================== HOME VIEW ======================== -->
           <div v-if="currentView === 'home'" key="home" class="view-panel">
-            
+
             <!-- ONYO LA SETUP -->
             <div v-if="!userData?.wabaId || !userData?.whatsappPhoneId" class="setup-banner">
               <div class="setup-icon">⚠️</div>
@@ -233,7 +233,7 @@
                 </div>
                 <div class="stat-trend up">↑ 12% mwezi huu</div>
               </div>
-              
+
               <div class="stat-card">
                 <div class="stat-card-inner">
                   <div class="stat-icon-wrapper bg-green-light">
@@ -247,7 +247,7 @@
                 </div>
                 <div class="stat-trend up">Walengwa wamepokea</div>
               </div>
-              
+
               <div class="stat-card">
                 <div class="stat-card-inner">
                   <div class="stat-icon-wrapper bg-orange-light">
@@ -261,7 +261,7 @@
                 </div>
                 <div class="stat-trend up">Wanaongezeka</div>
               </div>
-              
+
               <div class="stat-card">
                 <div class="stat-card-inner">
                   <div class="stat-icon-wrapper bg-red-light">
@@ -314,7 +314,7 @@
                   <h3>📋 Tengeneza Kampeni Mpya</h3>
                   <p class="text-muted">Pakia faili la Excel (.xlsx au .csv) lenye namba za wateja wako.</p>
                 </div>
-                
+
                 <div v-if="!userData?.whatsappPhoneId" class="alert-box warning mb-4">
                   <span class="a-icon">⚠️</span>
                   <div>
@@ -327,7 +327,7 @@
                   <label>Jina la Kampeni <span class="required">*</span></label>
                   <input type="text" v-model="campaignName" class="form-control" placeholder="Mfano: Ofa ya Sikukuu" :disabled="isSending" />
                 </div>
-                
+
                 <div class="form-row mt-3">
                   <div class="form-group flex-1">
                     <label>Jina la Template <span class="required">*</span></label>
@@ -374,7 +374,7 @@
                 <div class="card-header">
                   <h3>📊 Muhtasari wa Kampeni</h3>
                 </div>
-                
+
                 <div class="summary-details mt-3">
                   <div class="sum-row">
                     <span class="sum-label">Kampeni</span>
@@ -409,7 +409,7 @@
                     </strong>
                   </div>
                 </div>
-                
+
                 <!-- Conditional Buttons -->
                 <div class="summary-actions mt-4">
                   <div v-if="userData?.walletBalance < (parsedContacts.length * 84) && parsedContacts.length > 0" class="alert-box error mb-3">
@@ -419,7 +419,7 @@
                       <p>Unahitaji TZS {{ formatMoney((parsedContacts.length * 84) - userData?.walletBalance) }} zaidi.</p>
                     </div>
                   </div>
-                  
+
                   <button v-if="!userData?.whatsappPhoneId" class="btn-primary full-width bg-warning-btn" disabled>
                     ⚠️ Kamilisha Setup ya Meta Kwanza
                   </button>
@@ -473,24 +473,40 @@
                   🔄
                 </button>
               </div>
-              
+
               <div class="chat-search">
                 <div class="search-wrap">
                   <span class="search-icon">🔍</span>
                   <input type="text" placeholder="Tafuta mteja..." v-model="searchQuery" />
                 </div>
               </div>
-              
+
+              <!-- VIPENGELE VYA KUCHUJA SMS ZILIZOSOMWA NA HAZIJASOMWA -->
+              <div class="chat-filters">
+                <button
+                  :class="['filter-btn', { active: chatFilter === 'all' }]"
+                  @click="chatFilter = 'all'"
+                >
+                  Zote (All)
+                </button>
+                <button
+                  :class="['filter-btn', { active: chatFilter === 'unread' }]"
+                  @click="chatFilter = 'unread'"
+                >
+                  Hazijasomwa <span v-if="totalUnread > 0" class="unread-count-small">{{ totalUnread }}</span>
+                </button>
+              </div>
+
               <div class="chat-list custom-scrollbar">
                 <div v-if="filteredContacts.length === 0" class="empty-chat-list">
                   <span class="empty-icon">📭</span>
                   <h4>Hakuna Meseji Bado</h4>
                   <p>Wateja watakapotuma ujumbe, wataonekana hapa</p>
                 </div>
-                
-                <div v-for="contact in filteredContacts" :key="contact.id" 
-                     class="contact-item" 
-                     :class="{ 'active-contact': activeChat === contact.id }" 
+
+                <div v-for="contact in filteredContacts" :key="contact.id"
+                     class="contact-item"
+                     :class="{ 'active-contact': activeChat === contact.id }"
                      @click="openChat(contact)">
                   <div class="contact-avatar" :class="{ 'has-unread': contact.unread > 0 }">
                     {{ contact.name.charAt(0).toUpperCase() }}
@@ -539,7 +555,7 @@
 
               <div class="chat-messages-area custom-scrollbar" ref="chatScroll">
                 <div class="date-divider"><span>{{ currentDate }}</span></div>
-                
+
                 <div class="encryption-notice">
                   <span>🔒</span> Ujumbe wote unalindwa. Gharama: <strong>TZS 30/SMS</strong>
                 </div>
@@ -564,16 +580,16 @@
               </div>
 
               <div class="chat-input-area">
-                <input 
-                  type="text" 
-                  v-model="newChatMessage" 
-                  placeholder="Andika ujumbe hapa..." 
-                  @keyup.enter="sendLiveMessage" 
+                <input
+                  type="text"
+                  v-model="newChatMessage"
+                  placeholder="Andika ujumbe hapa..."
+                  @keyup.enter="sendLiveMessage"
                   :disabled="isSendingChat || userData?.walletBalance < 30 || !userData?.whatsappPhoneId"
                 />
-                <button 
-                  class="send-btn" 
-                  @click="sendLiveMessage" 
+                <button
+                  class="send-btn"
+                  @click="sendLiveMessage"
                   :disabled="!newChatMessage.trim() || isSendingChat || userData?.walletBalance < 30 || !userData?.whatsappPhoneId"
                 >
                   <span v-if="isSendingChat" class="loader-small"></span>
@@ -608,14 +624,14 @@
                   <h2>Mipangilio ya Akaunti</h2>
                   <p>Taarifa zako za WhatsApp API zimehifadhiwa kwa usalama</p>
                 </div>
-                
+
                 <!-- IKIWA SETUP IMekamilika -->
                 <div v-if="userData?.whatsappPhoneId && userData?.wabaId" class="api-details">
                   <div class="api-status-badge connected">
                     <span class="pulse-dot green"></span>
                     Imeshikamana na Meta API
                   </div>
-                  
+
                   <div class="detail-card">
                     <div class="detail-header">
                       <span class="detail-icon">🏢</span>
@@ -623,7 +639,7 @@
                     </div>
                     <p class="detail-value">{{ userData.businessName }}</p>
                   </div>
-                  
+
                   <div class="detail-card">
                     <div class="detail-header">
                       <span class="detail-icon">🔑</span>
@@ -655,7 +671,7 @@
                     <span class="pulse-dot orange"></span>
                     Setup Haijakamilika
                   </div>
-                  
+
                   <div class="setup-instructions">
                     <div class="instruction-step">
                       <span class="step-number">1</span>
@@ -679,7 +695,7 @@
                       </div>
                     </div>
                   </div>
-                  
+
                   <button class="btn-primary full-width mt-4" @click="$emit('logout')">
                     🔄 Toka na Ujaribu Upya
                   </button>
@@ -696,7 +712,7 @@
 
 <script setup>
 import { ref, reactive, computed, nextTick, onMounted, onUnmounted, watch } from 'vue';
-import * as XLSX from 'xlsx'; 
+import * as XLSX from 'xlsx';
 import axios from 'axios';
 import { io } from "socket.io-client";
 
@@ -718,11 +734,11 @@ const pageTitle = computed(() => {
 });
 
 const currentDate = computed(() => {
-  return new Date().toLocaleDateString('sw-TZ', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  return new Date().toLocaleDateString('sw-TZ', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
 });
 
@@ -753,29 +769,29 @@ const initSocket = () => {
         transports: ['websocket', 'polling']
     });
 
-    socket.on("connect", () => { 
-        isSocketConnected.value = true; 
+    socket.on("connect", () => {
+        isSocketConnected.value = true;
         console.log('Socket connected');
     });
-    
-    socket.on("disconnect", () => { 
-        isSocketConnected.value = false; 
+
+    socket.on("disconnect", () => {
+        isSocketConnected.value = false;
         console.log('Socket disconnected');
     });
 
     socket.on("newIncomingMessage", (data) => {
         const isMe = data.contactName === "You" || data.message.direction === 'OUTBOUND';
-        
+
         if (!isMe && notificationSound) {
             notificationSound.play().catch(() => {});
         }
 
         if (activeChat.value === data.contactId) {
-            const exists = chatMessages.value.find(m => 
-                m.id === data.message.id || 
+            const exists = chatMessages.value.find(m =>
+                m.id === data.message.id ||
                 (m.text === data.message.content && m.status === 'PENDING')
             );
-            
+
             if (!exists) {
                 chatMessages.value.push({
                     id: data.message.id,
@@ -793,8 +809,8 @@ const initSocket = () => {
 
             if (!isMe) {
                 const token = localStorage.getItem('msamba_token');
-                axios.get(`https://apibulksms.kedeshlimited.com/api/chat/messages/${data.contactId}`, { 
-                    headers: { Authorization: `Bearer ${token}` } 
+                axios.get(`https://apibulksms.kedeshlimited.com/api/chat/messages/${data.contactId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
                 }).catch(() => {});
             }
         }
@@ -803,12 +819,12 @@ const initSocket = () => {
 
     socket.on("messageStatusUpdate", (data) => {
         const msg = chatMessages.value.find(m => m.metaMsgId === data.metaMsgId);
-        if (msg) { 
-            msg.status = data.status; 
+        if (msg) {
+            msg.status = data.status;
         }
         const contact = chatContacts.value.find(c => c.id === activeChat.value);
-        if(contact && contact.lastStatus !== 'READ') { 
-            contact.lastStatus = data.status; 
+        if(contact && contact.lastStatus !== 'READ') {
+            contact.lastStatus = data.status;
         }
     });
 
@@ -830,14 +846,14 @@ const fetchContactsSilent = async () => {
   try {
     const token = localStorage.getItem('msamba_token');
     if (!token) return;
-    const res = await axios.get('https://apibulksms.kedeshlimited.com/api/chat/contacts', { 
-        headers: { Authorization: `Bearer ${token}` } 
+    const res = await axios.get('https://apibulksms.kedeshlimited.com/api/chat/contacts', {
+        headers: { Authorization: `Bearer ${token}` }
     });
-    if(res.data.success) { 
-        chatContacts.value = res.data.contacts.map(c => ({ 
-            ...c, 
-            time: formatTime(c.time) 
-        })); 
+    if(res.data.success) {
+        chatContacts.value = res.data.contacts.map(c => ({
+            ...c,
+            time: formatTime(c.time)
+        }));
     }
   } catch(e) {
     console.error('Error fetching contacts:', e);
@@ -845,7 +861,7 @@ const fetchContactsSilent = async () => {
 };
 
 // ==========================================
-// 📊 DASHBOARD & STATS LOGIC 
+// 📊 DASHBOARD & STATS LOGIC
 // ==========================================
 const totalSent = ref(0);
 const totalDelivered = ref(0);
@@ -858,8 +874,8 @@ const fetchDashboardStats = async (showLoader = true) => {
   try {
       const token = localStorage.getItem('msamba_token');
       if(!token) return;
-      const res = await axios.get('https://apibulksms.kedeshlimited.com/api/dashboard/stats', { 
-          headers: { Authorization: `Bearer ${token}` } 
+      const res = await axios.get('https://apibulksms.kedeshlimited.com/api/dashboard/stats', {
+          headers: { Authorization: `Bearer ${token}` }
       });
       if(res.data.success) {
           totalSent.value = res.data.stats.totalSent || 0;
@@ -869,8 +885,8 @@ const fetchDashboardStats = async (showLoader = true) => {
       }
   } catch(e) {
     console.error('Error fetching stats:', e);
-  } finally { 
-      isLoadingStats.value = false; 
+  } finally {
+      isLoadingStats.value = false;
   }
 };
 
@@ -880,72 +896,72 @@ const showTopupModal = ref(false);
 const fileInput = ref(null);
 const selectedFile = ref(null);
 const parsedContacts = ref([]);
-const campaignName = ref(''); 
-const templateNameInput = ref('hello_world'); 
+const campaignName = ref('');
+const templateNameInput = ref('hello_world');
 const templateLanguage = ref('sw');
-const headerImageUrl = ref(''); 
+const headerImageUrl = ref('');
 const isExtracting = ref(false);
 const isSending = ref(false);
 const sendReport = ref(null);
 
-const handleFileSelect = (event) => { 
-    const file = event.target.files[0]; 
-    if (file) processExcel(file); 
+const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) processExcel(file);
 };
 
-const handleDrop = (event) => { 
-    const file = event.dataTransfer.files[0]; 
-    if (file) processExcel(file); 
+const handleDrop = (event) => {
+    const file = event.dataTransfer.files[0];
+    if (file) processExcel(file);
 };
 
-const clearFile = () => { 
-    selectedFile.value = null; 
-    parsedContacts.value = []; 
-    sendReport.value = null; 
-    if (fileInput.value) fileInput.value.value = ''; 
+const clearFile = () => {
+    selectedFile.value = null;
+    parsedContacts.value = [];
+    sendReport.value = null;
+    if (fileInput.value) fileInput.value.value = '';
 };
 
 const processExcel = (file) => {
-  selectedFile.value = file; 
-  isExtracting.value = true; 
+  selectedFile.value = file;
+  isExtracting.value = true;
   sendReport.value = null;
-  
+
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
       const data = new Uint8Array(e.target.result);
       const workbook = XLSX.read(data, { type: 'array' });
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); 
-      
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
       let numbersArray = [];
       jsonData.forEach((row) => {
          for (let cell of Object.values(row)) {
            if (cell) {
-              let phone = String(cell).replace(/\D/g, ''); 
+              let phone = String(cell).replace(/\D/g, '');
               if (phone.length >= 9) {
                   if (phone.startsWith('0')) phone = '255' + phone.substring(1);
                   else if (phone.length === 9) phone = '255' + phone;
-                  if (phone.length >= 10 && phone.length <= 15 && phone.startsWith('255')) { 
-                      numbersArray.push(phone); 
-                      break; 
+                  if (phone.length >= 10 && phone.length <= 15 && phone.startsWith('255')) {
+                      numbersArray.push(phone);
+                      break;
                   }
               }
            }
          }
       });
-      
+
       parsedContacts.value = [...new Set(numbersArray)];
-      if(parsedContacts.value.length === 0) { 
-          alert("Hakuna namba sahihi zilizopatikana kwenye faili."); 
-          clearFile(); 
+      if(parsedContacts.value.length === 0) {
+          alert("Hakuna namba sahihi zilizopatikana kwenye faili.");
+          clearFile();
       }
-    } catch (error) { 
+    } catch (error) {
         console.error('Excel parsing error:', error);
-        alert("Faili halisomeki vizuri. Hakikisha ni .xlsx au .csv halali."); 
-        clearFile(); 
-    } finally { 
-        isExtracting.value = false; 
+        alert("Faili halisomeki vizuri. Hakikisha ni .xlsx au .csv halali.");
+        clearFile();
+    } finally {
+        isExtracting.value = false;
     }
   };
   reader.readAsArrayBuffer(file);
@@ -953,94 +969,107 @@ const processExcel = (file) => {
 
 const sendBulkSMS = async () => {
    if (parsedContacts.value.length === 0 || !campaignName.value || !templateNameInput.value) return;
-   
+
    const estimatedCost = parsedContacts.value.length * 84;
    if(userData.value.walletBalance < estimatedCost) {
-      alert(`Salio lako halitoshi. Unahitaji TZS ${formatMoney(estimatedCost)}. Salio lako sasa: TZS ${formatMoney(userData.value.walletBalance)}`); 
+      alert(`Salio lako halitoshi. Unahitaji TZS ${formatMoney(estimatedCost)}. Salio lako sasa: TZS ${formatMoney(userData.value.walletBalance)}`);
       return;
    }
 
-   isSending.value = true; 
+   isSending.value = true;
    sendReport.value = null;
-  
-   
+
+
    try {
       const token = localStorage.getItem('msamba_token');
-      const res = await axios.post('https://apibulksms.kedeshlimited.com/api/send-bulk', { 
-          contacts: parsedContacts.value, 
-          campaignName: campaignName.value, 
+      const res = await axios.post('https://apibulksms.kedeshlimited.com/api/send-bulk', {
+          contacts: parsedContacts.value,
+          campaignName: campaignName.value,
           templateName: templateNameInput.value.trim(),
           templateLanguage: templateLanguage.value.trim(),
-          headerImageUrl: headerImageUrl.value.trim() 
+          headerImageUrl: headerImageUrl.value.trim()
       }, { headers: { Authorization: `Bearer ${token}` } });
-      
+
       if (res.data.success) {
-         sendReport.value = { 
-             success: true, 
-             message: res.data.message, 
-             successCount: res.data.stats?.success || 0, 
-             failedCount: res.data.stats?.failed || 0 
+         sendReport.value = {
+             success: true,
+             message: res.data.message,
+             successCount: res.data.stats?.success || 0,
+             failedCount: res.data.stats?.failed || 0
          };
          if(res.data.newBalance !== undefined) {
              userData.value.walletBalance = res.data.newBalance;
          }
          fetchDashboardStats(false);
       }
-   } catch (error) { 
-      sendReport.value = { 
-          success: false, 
-          message: error.response?.data?.error || "Kosa la kimtandao limetokea." 
-      }; 
-   } finally { 
-       isSending.value = false; 
+   } catch (error) {
+      sendReport.value = {
+          success: false,
+          message: error.response?.data?.error || "Kosa la kimtandao limetokea."
+      };
+   } finally {
+       isSending.value = false;
    }
 };
 
 // ======================= LIVE CHAT =======================
-const activeChat = ref(null); 
+const activeChat = ref(null);
 const chatScroll = ref(null);
 const newChatMessage = ref('');
 const chatContacts = ref([]);
 const chatMessages = ref([]);
 const isSendingChat = ref(false);
 const searchQuery = ref('');
-let statsPolling = null; 
+const chatFilter = ref('all'); // Nimeongeza state ya filter hapa
+let statsPolling = null;
 
-const currentActiveContact = computed(() => { 
-    return chatContacts.value.find(c => c.id === activeChat.value) || {}; 
+const currentActiveContact = computed(() => {
+    return chatContacts.value.find(c => c.id === activeChat.value) || {};
 });
 
-const formatTime = (dateString) => { 
-    if (!dateString) return ''; 
+const formatTime = (dateString) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleTimeString('sw-TZ', { hour: '2-digit', minute: '2-digit' }); 
+    return date.toLocaleTimeString('sw-TZ', { hour: '2-digit', minute: '2-digit' });
 };
 
-const totalUnread = computed(() => { 
-    return chatContacts.value.reduce((sum, contact) => sum + (contact.unread || 0), 0); 
+const totalUnread = computed(() => {
+    return chatContacts.value.reduce((sum, contact) => sum + (contact.unread || 0), 0);
 });
 
+// Logic iliyoboreshwa ya Kuchuja (Search & Unread Filter)
 const filteredContacts = computed(() => {
-  if (!searchQuery.value) return chatContacts.value;
-  const query = searchQuery.value.toLowerCase();
-  return chatContacts.value.filter(c => 
-      c.name.toLowerCase().includes(query) || 
+  let result = chatContacts.value;
+
+  // Chuja kwa SMS zisizosomwa pekee ikiwa kitufe kimebonyezwa
+  if (chatFilter.value === 'unread') {
+    result = result.filter(c => c.unread > 0);
+  }
+
+  // Chuja kwa majina au namba ikiwa mtu anatafuta
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(c =>
+      c.name.toLowerCase().includes(query) ||
       c.phone.includes(query)
-  );
+    );
+  }
+
+  return result;
 });
 
 const fetchContacts = async () => {
   try {
     const token = localStorage.getItem('msamba_token');
     if(!token) return;
-    const res = await axios.get('https://apibulksms.kedeshlimited.com/api/chat/contacts', { 
-        headers: { Authorization: `Bearer ${token}` } 
+    const res = await axios.get('https://apibulksms.kedeshlimited.com/api/chat/contacts', {
+        headers: { Authorization: `Bearer ${token}` }
     });
-    if(res.data.success) { 
-        chatContacts.value = res.data.contacts.map(c => ({ 
-            ...c, 
-            time: formatTime(c.time) 
-        })); 
+    if(res.data.success) {
+        chatContacts.value = res.data.contacts.map(c => ({
+            ...c,
+            time: formatTime(c.time)
+        }));
     }
   } catch(e) {
     console.error('Error fetching contacts:', e);
@@ -1050,17 +1079,17 @@ const fetchContacts = async () => {
 const fetchMessages = async (contactId) => {
   try {
     const token = localStorage.getItem('msamba_token');
-    const res = await axios.get(`https://apibulksms.kedeshlimited.com/api/chat/messages/${contactId}`, { 
-        headers: { Authorization: `Bearer ${token}` } 
+    const res = await axios.get(`https://apibulksms.kedeshlimited.com/api/chat/messages/${contactId}`, {
+        headers: { Authorization: `Bearer ${token}` }
     });
     if(res.data.success) {
-      chatMessages.value = res.data.messages.map(m => ({ 
-          id: m.id, 
-          metaMsgId: m.metaMsgId, 
-          direction: m.direction, 
-          text: m.content, 
-          status: m.status, 
-          time: formatTime(m.createdAt) 
+      chatMessages.value = res.data.messages.map(m => ({
+          id: m.id,
+          metaMsgId: m.metaMsgId,
+          direction: m.direction,
+          text: m.content,
+          status: m.status,
+          time: formatTime(m.createdAt)
       }));
     }
   } catch(e) {
@@ -1069,43 +1098,43 @@ const fetchMessages = async (contactId) => {
 };
 
 const openChat = (contact) => {
-  activeChat.value = contact.id; 
-  contact.unread = 0; 
-  fetchMessages(contact.id); 
-  setTimeout(scrollToBottom, 300); 
+  activeChat.value = contact.id;
+  contact.unread = 0;
+  fetchMessages(contact.id);
+  setTimeout(scrollToBottom, 300);
 };
 
 const sendLiveMessage = async () => {
-  if(userData.value.walletBalance < 30) { 
-      alert("⚠️ Salio lako halitoshi. Unahitaji angalau TZS 30 kujibu ujumbe."); 
-      return; 
+  if(userData.value.walletBalance < 30) {
+      alert("⚠️ Salio lako halitoshi. Unahitaji angalau TZS 30 kujibu ujumbe.");
+      return;
   }
   if (!newChatMessage.value.trim() || isSendingChat.value || !activeChat.value) return;
   if (!userData.value.whatsappPhoneId) {
       alert("⚠️ Akaunti yako haijaunganishwa na WhatsApp API. Nenda kwenye Mipangilio.");
       return;
   }
-  
+
   const textToSend = newChatMessage.value;
-  newChatMessage.value = ''; 
+  newChatMessage.value = '';
   isSendingChat.value = true;
 
   const tempId = Date.now();
-  chatMessages.value.push({ 
-      id: tempId, 
-      metaMsgId: null, 
-      direction: 'OUTBOUND', 
-      text: textToSend, 
-      status: 'PENDING', 
-      time: new Date().toLocaleTimeString('sw-TZ', { hour: '2-digit', minute: '2-digit' }) 
+  chatMessages.value.push({
+      id: tempId,
+      metaMsgId: null,
+      direction: 'OUTBOUND',
+      text: textToSend,
+      status: 'PENDING',
+      time: new Date().toLocaleTimeString('sw-TZ', { hour: '2-digit', minute: '2-digit' })
   });
   scrollToBottom();
 
   try {
     const token = localStorage.getItem('msamba_token');
     const res = await axios.post('https://apibulksms.kedeshlimited.com/api/chat/send', {
-      contactId: activeChat.value, 
-      phone: currentActiveContact.value.phone, 
+      contactId: activeChat.value,
+      phone: currentActiveContact.value.phone,
       messageText: textToSend
     }, { headers: { Authorization: `Bearer ${token}` } });
 
@@ -1113,120 +1142,120 @@ const sendLiveMessage = async () => {
         userData.value.walletBalance = res.data.newBalance;
         fetchDashboardStats(false);
     }
-    fetchMessages(activeChat.value); 
+    fetchMessages(activeChat.value);
     fetchContactsSilent();
   } catch (error) {
-    chatMessages.value = chatMessages.value.filter(m => m.id !== tempId); 
-    
-    if(error.response?.status === 402) { 
-        alert("Salio lako limeisha. Tafadhali ongeza salio kuendelea kutuma ujumbe."); 
-    } else if(error.response?.status === 403) { 
-        alert("Huna Phone ID iliyounganishwa. Nenda kwenye Mipangilio kukamilisha setup."); 
-    } else if(error.response?.status === 400) { 
-        alert(error.response.data.error); 
-    } else { 
-        alert("Imeshindwa kutuma ujumbe. Tafadhali jaribu tena."); 
+    chatMessages.value = chatMessages.value.filter(m => m.id !== tempId);
+
+    if(error.response?.status === 402) {
+        alert("Salio lako limeisha. Tafadhali ongeza salio kuendelea kutuma ujumbe.");
+    } else if(error.response?.status === 403) {
+        alert("Huna Phone ID iliyounganishwa. Nenda kwenye Mipangilio kukamilisha setup.");
+    } else if(error.response?.status === 400) {
+        alert(error.response.data.error);
+    } else {
+        alert("Imeshindwa kutuma ujumbe. Tafadhali jaribu tena.");
     }
-  } finally { 
-      isSendingChat.value = false; 
+  } finally {
+      isSendingChat.value = false;
   }
 };
 
-const scrollToBottom = async () => { 
-    await nextTick(); 
-    if (chatScroll.value) { 
-        chatScroll.value.scrollTop = chatScroll.value.scrollHeight; 
-    } 
+const scrollToBottom = async () => {
+    await nextTick();
+    if (chatScroll.value) {
+        chatScroll.value.scrollTop = chatScroll.value.scrollHeight;
+    }
 };
 
-const startStatsPolling = () => { 
+const startStatsPolling = () => {
   fetchDashboardStats();
-  statsPolling = setInterval(() => { 
+  statsPolling = setInterval(() => {
     if(currentView.value === 'home') fetchDashboardStats(false);
-  }, 15000); 
+  }, 15000);
 };
 
-const stopStatsPolling = () => { 
-    if (statsPolling) { 
-        clearInterval(statsPolling); 
-        statsPolling = null; 
-    } 
+const stopStatsPolling = () => {
+    if (statsPolling) {
+        clearInterval(statsPolling);
+        statsPolling = null;
+    }
 };
 
-watch(currentView, (newView) => { 
-    if(newView === 'chat') { 
-        fetchContacts(); 
-    } 
+watch(currentView, (newView) => {
+    if(newView === 'chat') {
+        fetchContacts();
+    }
 });
 
-onMounted(() => { 
-    initSocket(); 
-    startStatsPolling(); 
-    fetchContacts(); 
+onMounted(() => {
+    initSocket();
+    startStatsPolling();
+    fetchContacts();
 });
 
-onUnmounted(() => { 
-    stopStatsPolling(); 
-    if(socket) socket.disconnect(); 
+onUnmounted(() => {
+    stopStatsPolling();
+    if(socket) socket.disconnect();
 });
 </script>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-* { 
-  margin: 0; 
-  padding: 0; 
-  box-sizing: border-box; 
-  font-family: 'Plus Jakarta Sans', sans-serif; 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-.dashboard-layout { 
-  display: flex; 
-  height: 100vh; 
-  width: 100vw; 
-  background: #f1f5f9; 
-  overflow: hidden; 
+.dashboard-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background: #f1f5f9;
+  overflow: hidden;
 }
 
 /* ======== MODAL ======== */
-.modal-overlay { 
-  position: fixed; 
-  top: 0; 
-  left: 0; 
-  width: 100%; 
-  height: 100%; 
-  background: rgba(0,0,0,0.6); 
-  display: flex; 
-  justify-content: center; 
-  align-items: center; 
-  z-index: 1000; 
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
   backdrop-filter: blur(8px);
   padding: 20px;
 }
 
-.modal-card { 
-  background: white; 
-  width: 100%; 
-  max-width: 480px; 
-  border-radius: 24px; 
-  box-shadow: 0 25px 50px rgba(0,0,0,0.25); 
-  overflow: hidden; 
-  animation: modalSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+.modal-card {
+  background: white;
+  width: 100%;
+  max-width: 480px;
+  border-radius: 24px;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+  overflow: hidden;
+  animation: modalSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-@keyframes modalSlideIn { 
-  from { transform: translateY(40px) scale(0.95); opacity: 0; } 
-  to { transform: translateY(0) scale(1); opacity: 1; } 
+@keyframes modalSlideIn {
+  from { transform: translateY(40px) scale(0.95); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-.modal-header { 
-  background: linear-gradient(135deg, #0f172a, #1e293b); 
-  color: white; 
-  padding: 24px 28px; 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
+.modal-header {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: white;
+  padding: 24px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .modal-header-content {
@@ -1239,18 +1268,18 @@ onUnmounted(() => {
   font-size: 1.5rem;
 }
 
-.modal-header h3 { 
-  margin: 0; 
-  font-size: 1.2rem; 
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
   font-weight: 700;
 }
 
-.close-btn { 
-  background: rgba(255,255,255,0.15); 
-  border: none; 
-  color: white; 
-  font-size: 1.8rem; 
-  cursor: pointer; 
+.close-btn {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  font-size: 1.8rem;
+  cursor: pointer;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -1264,12 +1293,12 @@ onUnmounted(() => {
   background: rgba(255,255,255,0.25);
 }
 
-.modal-body { 
-  padding: 32px; 
+.modal-body {
+  padding: 32px;
 }
 
-.wallet-icon-large { 
-  font-size: 4.5rem; 
+.wallet-icon-large {
+  font-size: 4.5rem;
   text-align: center;
   margin-bottom: 16px;
 }
@@ -1319,11 +1348,11 @@ onUnmounted(() => {
   margin-top: 2px;
 }
 
-.contact-admin { 
-  background: #f8fafc; 
-  padding: 20px; 
-  border-radius: 12px; 
-  border: 1px dashed #cbd5e1; 
+.contact-admin {
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
 }
 
 .contact-row {
@@ -1352,13 +1381,13 @@ onUnmounted(() => {
 }
 
 /* ======== SIDEBAR ======== */
-.sidebar { 
-  width: 280px; 
-  background: linear-gradient(180deg, #0b1121 0%, #0f172a 100%); 
-  color: white; 
-  display: flex; 
-  flex-direction: column; 
-  z-index: 10; 
+.sidebar {
+  width: 280px;
+  background: linear-gradient(180deg, #0b1121 0%, #0f172a 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
   flex-shrink: 0;
 }
 
@@ -1369,10 +1398,10 @@ onUnmounted(() => {
   padding: 24px 16px;
 }
 
-.brand { 
-  display: flex; 
-  align-items: center; 
-  gap: 14px; 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   padding-bottom: 24px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
   margin-bottom: 20px;
@@ -1382,14 +1411,14 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.brand-logo { 
-  height: 40px; 
+.brand-logo {
+  height: 40px;
   object-fit: contain;
 }
 
-.brand-text h2 { 
-  font-size: 1rem; 
-  font-weight: 800; 
+.brand-text h2 {
+  font-size: 1rem;
+  font-weight: 800;
   letter-spacing: 0.5px;
   color: #f8fafc;
   white-space: nowrap;
@@ -1409,49 +1438,49 @@ onUnmounted(() => {
   margin-top: 4px;
 }
 
-.nav-menu { 
-  flex: 1; 
-  overflow-y: auto; 
+.nav-menu {
+  flex: 1;
+  overflow-y: auto;
 }
 
-.menu-label { 
-  font-size: 0.7rem; 
-  color: #64748b; 
-  font-weight: 700; 
-  margin-bottom: 10px; 
+.menu-label {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 700;
+  margin-bottom: 10px;
   padding-left: 12px;
-  letter-spacing: 1.5px; 
+  letter-spacing: 1.5px;
   text-transform: uppercase;
 }
 
-.nav-btn { 
-  position: relative; 
-  display: flex; 
-  align-items: center; 
-  gap: 12px; 
-  width: 100%; 
-  padding: 12px 16px; 
-  background: transparent; 
-  border: none; 
-  color: #94a3b8; 
-  font-size: 0.95rem; 
-  font-weight: 600; 
-  border-radius: 10px; 
-  cursor: pointer; 
-  transition: 0.3s; 
-  margin-bottom: 4px; 
+.nav-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s;
+  margin-bottom: 4px;
   text-align: left;
 }
 
-.nav-btn:hover { 
-  background: rgba(255,255,255,0.06); 
-  color: #e2e8f0; 
+.nav-btn:hover {
+  background: rgba(255,255,255,0.06);
+  color: #e2e8f0;
 }
 
-.nav-btn.active { 
-  background: linear-gradient(135deg, #4f46e5, #3730a3); 
-  color: white; 
-  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3); 
+.nav-btn.active {
+  background: linear-gradient(135deg, #4f46e5, #3730a3);
+  color: white;
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
 }
 
 .nav-icon {
@@ -1470,12 +1499,12 @@ onUnmounted(() => {
   opacity: 0.7;
 }
 
-.unread-badge-sidebar { 
-  background: #ef4444; 
-  color: white; 
-  padding: 2px 8px; 
-  border-radius: 10px; 
-  font-size: 0.75rem; 
+.unread-badge-sidebar {
+  background: #ef4444;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
   font-weight: 700;
   min-width: 22px;
   text-align: center;
@@ -1483,17 +1512,17 @@ onUnmounted(() => {
 
 .mt-4 { margin-top: 1.5rem; }
 
-.sidebar-footer { 
+.sidebar-footer {
   border-top: 1px solid rgba(255,255,255,0.08);
   padding-top: 20px;
 }
 
-.wallet-card-mini { 
-  background: linear-gradient(135deg, #10b981, #059669); 
-  padding: 16px; 
-  border-radius: 14px; 
-  margin-bottom: 16px; 
-  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25); 
+.wallet-card-mini {
+  background: linear-gradient(135deg, #10b981, #059669);
+  padding: 16px;
+  border-radius: 14px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);
 }
 
 .wallet-top {
@@ -1517,22 +1546,22 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-.wallet-amount { 
-  font-size: 1.6rem; 
-  font-weight: 800; 
-  margin-bottom: 12px; 
+.wallet-amount {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-bottom: 12px;
   letter-spacing: -0.5px;
 }
 
-.topup-btn { 
-  background: rgba(255,255,255,0.2); 
-  color: white; 
-  border: none; 
-  padding: 10px; 
-  width: 100%; 
-  border-radius: 8px; 
-  font-weight: 600; 
-  cursor: pointer; 
+.topup-btn {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: none;
+  padding: 10px;
+  width: 100%;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
   transition: 0.3s;
   display: flex;
   align-items: center;
@@ -1540,51 +1569,51 @@ onUnmounted(() => {
   gap: 6px;
 }
 
-.topup-btn:hover { 
-  background: white; 
-  color: #059669; 
+.topup-btn:hover {
+  background: white;
+  color: #059669;
 }
 
-.user-profile-mini { 
-  display: flex; 
-  align-items: center; 
-  gap: 12px; 
-  padding: 12px; 
-  background: rgba(255,255,255,0.05); 
-  border-radius: 12px; 
+.user-profile-mini {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
 }
 
-.user-avatar { 
-  width: 42px; 
-  height: 42px; 
-  background: #4f46e5; 
-  border-radius: 10px; 
-  display: flex; 
-  justify-content: center; 
-  align-items: center; 
-  font-weight: 700; 
-  font-size: 1.2rem; 
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  background: #4f46e5;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 700;
+  font-size: 1.2rem;
   flex-shrink: 0;
 }
 
-.user-details { 
+.user-details {
   flex: 1;
   overflow: hidden;
 }
 
-.user-details h4 { 
-  font-size: 0.85rem; 
-  margin-bottom: 2px; 
-  white-space: nowrap; 
-  overflow: hidden; 
-  text-overflow: ellipsis; 
+.user-details h4 {
+  font-size: 0.85rem;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   max-width: 130px;
   font-weight: 600;
-} 
+}
 
-.user-details p { 
-  font-size: 0.75rem; 
-  color: #94a3b8; 
+.user-details p {
+  font-size: 0.75rem;
+  color: #94a3b8;
 }
 
 .logout-icon-btn {
@@ -1606,21 +1635,21 @@ onUnmounted(() => {
 }
 
 /* ======== MAIN CONTENT ======== */
-.main-content { 
-  flex: 1; 
-  display: flex; 
-  flex-direction: column; 
-  overflow: hidden; 
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.topbar { 
-  height: 72px; 
-  background: white; 
-  border-bottom: 1px solid #e2e8f0; 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  padding: 0 32px; 
+.topbar {
+  height: 72px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 32px;
   flex-shrink: 0;
 }
 
@@ -1629,24 +1658,24 @@ onUnmounted(() => {
   align-items: center;
 }
 
-.page-title h1 { 
-  font-size: 1.4rem; 
-  color: #0f172a; 
-  font-weight: 800; 
+.page-title h1 {
+  font-size: 1.4rem;
+  color: #0f172a;
+  font-weight: 800;
   letter-spacing: -0.5px;
 }
 
-.date-text { 
-  font-size: 0.8rem; 
-  color: #64748b; 
-  margin-top: 2px; 
+.date-text {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 2px;
   font-weight: 500;
 }
 
-.topbar-right { 
-  display: flex; 
-  align-items: center; 
-  gap: 16px; 
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .status-indicator {
@@ -1699,44 +1728,44 @@ onUnmounted(() => {
   animation: pulseOrange 2s infinite;
 }
 
-@keyframes pulseGreen { 
-  70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); } 
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } 
+@keyframes pulseGreen {
+  70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
-@keyframes pulseOrange { 
-  70% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); } 
-  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); } 
+@keyframes pulseOrange {
+  70% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
 }
 
-.logout-btn-top { 
-  background: #fee2e2; 
-  color: #ef4444; 
-  border: none; 
-  padding: 8px 16px; 
-  border-radius: 10px; 
-  font-weight: 600; 
-  cursor: pointer; 
-  transition: 0.3s; 
+.logout-btn-top {
+  background: #fee2e2;
+  color: #ef4444;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 0.85rem;
 }
 
-.logout-btn-top:hover { 
-  background: #fca5a5; 
+.logout-btn-top:hover {
+  background: #fca5a5;
   color: white;
 }
 
-.content-area { 
-  flex: 1; 
-  padding: 32px; 
-  overflow-y: auto; 
+.content-area {
+  flex: 1;
+  padding: 32px;
+  overflow-y: auto;
 }
 
-.view-panel { 
-  height: 100%; 
+.view-panel {
+  height: 100%;
 }
 
 /* ======== SETUP BANNER ======== */
@@ -1802,11 +1831,11 @@ onUnmounted(() => {
 }
 
 /* ======== WELCOME BANNER ======== */
-.welcome-banner { 
-  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); 
-  border-radius: 24px; 
-  padding: 40px; 
-  color: white; 
+.welcome-banner {
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+  border-radius: 24px;
+  padding: 40px;
+  color: white;
   margin-bottom: 32px;
   position: relative;
   overflow: hidden;
@@ -1861,17 +1890,17 @@ onUnmounted(() => {
   75% { transform: rotate(-10deg); }
 }
 
-.banner-text-section h2 { 
-  font-size: 2rem; 
-  font-weight: 800; 
-  margin-bottom: 12px; 
+.banner-text-section h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 12px;
   letter-spacing: -1px;
 }
 
-.banner-text-section p { 
-  font-size: 1rem; 
-  opacity: 0.9; 
-  line-height: 1.6; 
+.banner-text-section p {
+  font-size: 1rem;
+  opacity: 0.9;
+  line-height: 1.6;
   max-width: 500px;
 }
 
@@ -1942,51 +1971,51 @@ onUnmounted(() => {
   50% { transform: translateY(-15px); }
 }
 
-.btn-banner { 
-  background: white; 
-  color: #4f46e5; 
-  border: none; 
-  padding: 14px 28px; 
-  border-radius: 12px; 
-  font-weight: 700; 
-  font-size: 1rem; 
-  cursor: pointer; 
+.btn-banner {
+  background: white;
+  color: #4f46e5;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
   transition: 0.3s;
   position: relative;
   z-index: 1;
 }
 
-.btn-banner:hover:not(:disabled) { 
-  transform: translateY(-2px); 
+.btn-banner:hover:not(:disabled) {
+  transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0,0,0,0.2);
 }
 
-.btn-banner:disabled { 
-  background: #cbd5e1; 
-  cursor: not-allowed; 
+.btn-banner:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
   transform: none;
   color: #64748b;
 }
 
 /* ======== STATS GRID ======== */
-.stats-grid { 
-  display: grid; 
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
-  gap: 20px; 
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
   margin-bottom: 32px;
 }
 
-.stat-card { 
-  background: white; 
-  padding: 24px; 
-  border-radius: 16px; 
-  border: 1px solid #e2e8f0; 
-  transition: all 0.3s ease; 
+.stat-card {
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
 }
 
-.stat-card:hover { 
-  transform: translateY(-4px); 
-  box-shadow: 0 12px 30px rgba(0,0,0,0.08); 
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
 }
 
 .stat-card-inner {
@@ -2019,17 +2048,17 @@ onUnmounted(() => {
   flex: 1;
 }
 
-.stat-number { 
-  font-size: 1.8rem; 
-  color: #0f172a; 
-  font-weight: 800; 
+.stat-number {
+  font-size: 1.8rem;
+  color: #0f172a;
+  font-weight: 800;
   letter-spacing: -0.5px;
 }
 
-.stat-label-text { 
-  font-size: 0.85rem; 
-  color: #64748b; 
-  font-weight: 600; 
+.stat-label-text {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 600;
   margin-top: 2px;
 }
 
@@ -2108,18 +2137,18 @@ onUnmounted(() => {
   line-height: 1.4;
 }
 
-/* ======== BULK SMS ======== */
-.grid-layout { 
-  display: grid; 
-  grid-template-columns: 2fr 1fr; 
-  gap: 24px; 
+/* ======== BULK SMS MABADILIKO YA FORM (HAPA NIMEBORESHA SANA MAANDISHI YAONEKANE) ======== */
+.grid-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
 }
 
-.card { 
-  background: white; 
-  padding: 32px; 
-  border-radius: 20px; 
-  border: 1px solid #e2e8f0; 
+.card {
+  background: white;
+  padding: 32px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
 }
 
 .card-header {
@@ -2138,72 +2167,82 @@ onUnmounted(() => {
   font-size: 0.9rem;
 }
 
-.form-group { 
-  margin-bottom: 1.5rem; 
+.form-group {
+  margin-bottom: 1.5rem;
 }
 
-.form-group label { 
-  display: block; 
-  font-weight: 600; 
-  color: #334155; 
+.form-group label {
+  display: block;
+  font-weight: 700;
+  color: #1e293b;
   margin-bottom: 8px;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .required {
   color: #ef4444;
 }
 
-.form-control { 
-  width: 100%; 
-  padding: 12px 16px; 
-  border: 2px solid #e2e8f0; 
-  border-radius: 10px; 
-  font-size: 0.95rem; 
-  outline: none; 
+/* KODI MPYA: Imesukwa kusuluhisha tatizo la maandishi kutoonekana */
+.form-control {
+  width: 100%;
+  padding: 14px 18px;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+  outline: none;
+  background: #ffffff;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.form-control::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.form-control:focus {
+  border-color: #4f46e5;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15), inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.form-control:disabled {
   background: #f8fafc;
+  cursor: not-allowed;
+  color: #64748b;
+  border-color: #e2e8f0;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.upload-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 40px 24px;
+  text-align: center;
+  background: #f8fafc;
+  cursor: pointer;
   transition: 0.3s;
 }
 
-.form-control:focus { 
-  border-color: #4f46e5; 
-  background: white;
-  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-}
-
-.form-control:disabled { 
-  background: #f1f5f9; 
-  cursor: not-allowed; 
-  color: #94a3b8; 
-}
-
-.form-row { 
-  display: flex; 
-  gap: 16px; 
-}
-
-.flex-1 { 
-  flex: 1; 
-}
-
-.upload-zone { 
-  border: 2px dashed #cbd5e1; 
-  border-radius: 16px; 
-  padding: 40px 24px; 
-  text-align: center; 
-  background: #f8fafc; 
-  cursor: pointer; 
-  transition: 0.3s;
-}
-
-.upload-zone:hover { 
-  border-color: #4f46e5; 
+.upload-zone:hover {
+  border-color: #4f46e5;
   background: #f0f0ff;
 }
 
-.upload-zone.has-file { 
-  border: 2px solid #10b981; 
-  background: #ecfdf5; 
+.upload-zone.has-file {
+  border: 2px solid #10b981;
+  background: #ecfdf5;
 }
 
 .upload-state {
@@ -2213,26 +2252,26 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-.upload-icon { 
-  font-size: 3rem; 
+.upload-icon {
+  font-size: 3rem;
 }
 
 .spinning {
   animation: spin 2s linear infinite;
 }
 
-@keyframes spin { 
-  to { transform: rotate(360deg); } 
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-.upload-state h4 { 
-  color: #0f172a; 
+.upload-state h4 {
+  color: #0f172a;
   font-weight: 700;
 }
 
-.upload-state p { 
-  color: #64748b; 
-  font-size: 0.9rem; 
+.upload-state p {
+  color: #64748b;
+  font-size: 0.9rem;
 }
 
 .upload-hint {
@@ -2241,24 +2280,24 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-.text-green { 
-  color: #10b981; 
+.text-green {
+  color: #10b981;
 }
 
-.btn-outline-danger { 
-  background: white; 
-  color: #ef4444; 
-  border: 2px solid #fecaca; 
-  padding: 8px 16px; 
-  border-radius: 8px; 
-  font-weight: 600; 
-  cursor: pointer; 
+.btn-outline-danger {
+  background: white;
+  color: #ef4444;
+  border: 2px solid #fecaca;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
   transition: 0.3s;
   font-size: 0.85rem;
 }
 
-.btn-outline-danger:hover { 
-  background: #fef2f2; 
+.btn-outline-danger:hover {
+  background: #fef2f2;
 }
 
 /* Summary Card */
@@ -2301,31 +2340,31 @@ onUnmounted(() => {
 }
 
 /* Buttons */
-.btn-primary { 
-  display: flex; 
-  justify-content: center; 
-  align-items: center; 
-  background: linear-gradient(135deg, #4f46e5, #3730a3); 
-  color: white; 
-  border: none; 
-  padding: 14px 24px; 
-  border-radius: 12px; 
-  font-weight: 600; 
-  font-size: 1rem; 
-  cursor: pointer; 
+.btn-primary {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #4f46e5, #3730a3);
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
   transition: 0.3s;
   gap: 8px;
 }
 
-.btn-primary:hover:not(:disabled) { 
-  transform: translateY(-2px); 
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
 }
 
-.btn-primary:disabled { 
-  background: #cbd5e1; 
-  cursor: not-allowed; 
-  transform: none; 
+.btn-primary:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+  transform: none;
   color: #94a3b8;
 }
 
@@ -2337,24 +2376,24 @@ onUnmounted(() => {
   background: #ef4444;
 }
 
-.full-width { 
-  width: 100%; 
+.full-width {
+  width: 100%;
 }
 
 /* Report Box */
-.report-box { 
-  padding: 20px; 
-  border-radius: 12px; 
+.report-box {
+  padding: 20px;
+  border-radius: 12px;
 }
 
-.report-success { 
-  background: #ecfdf5; 
-  border: 1px solid #a7f3d0; 
+.report-success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
 }
 
-.report-danger { 
-  background: #fef2f2; 
-  border: 1px solid #fecaca; 
+.report-danger {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
 }
 
 .report-header {
@@ -2408,37 +2447,37 @@ onUnmounted(() => {
 .text-blue { color: #3b82f6; }
 .text-green { color: #10b981; }
 
-/* ======== LIVE CHAT ======== */
-.chat-layout { 
-  display: flex; 
-  background: white; 
-  border-radius: 20px; 
-  overflow: hidden; 
-  border: 1px solid #e2e8f0; 
-  height: calc(100vh - 160px); 
+/* ======== LIVE CHAT (NA VICHUJIO VIPYA) ======== */
+.chat-layout {
+  display: flex;
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  height: calc(100vh - 160px);
   box-shadow: 0 10px 30px rgba(0,0,0,0.05);
 }
 
-.chat-sidebar { 
-  width: 350px; 
-  border-right: 1px solid #e2e8f0; 
-  display: flex; 
-  flex-direction: column; 
-  background: white; 
+.chat-sidebar {
+  width: 350px;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  background: white;
   flex-shrink: 0;
 }
 
-.chat-sidebar-header { 
-  padding: 20px; 
-  border-bottom: 1px solid #e2e8f0; 
-  display: flex; 
-  justify-content: space-between; 
+.chat-sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
 }
 
-.chat-sidebar-header h3 { 
-  color: #0f172a; 
-  font-size: 1.1rem; 
+.chat-sidebar-header h3 {
+  color: #0f172a;
+  font-size: 1.1rem;
   font-weight: 700;
 }
 
@@ -2456,36 +2495,81 @@ onUnmounted(() => {
   background: #f1f5f9;
 }
 
-.chat-search { 
-  padding: 12px 16px; 
-  border-bottom: 1px solid #e2e8f0; 
+.chat-search {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.search-wrap { 
-  display: flex; 
-  align-items: center; 
-  background: #f1f5f9; 
-  border-radius: 10px; 
-  padding: 10px 16px; 
+.search-wrap {
+  display: flex;
+  align-items: center;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 10px 16px;
 }
 
-.search-icon { 
-  font-size: 0.9rem; 
-  margin-right: 10px; 
+.search-icon {
+  font-size: 0.9rem;
+  margin-right: 10px;
 }
 
-.search-wrap input { 
-  flex: 1; 
-  border: none; 
-  background: transparent; 
-  outline: none; 
-  font-size: 0.9rem; 
+.search-wrap input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.9rem;
   color: #334155;
 }
 
-.chat-list { 
-  flex: 1; 
-  overflow-y: auto; 
+/* KODI MPYA YA VICHUJIO (CHAT FILTERS) */
+.chat-filters {
+  display: flex;
+  padding: 8px 16px 12px 16px;
+  gap: 8px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.filter-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 20px;
+  border: none;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-btn:hover {
+  background: #e2e8f0;
+}
+
+.filter-btn.active {
+  background: #4f46e5;
+  color: white;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+}
+
+.unread-count-small {
+  background: #ef4444;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.chat-list {
+  flex: 1;
+  overflow-y: auto;
 }
 
 .empty-chat-list {
@@ -2513,36 +2597,36 @@ onUnmounted(() => {
   font-size: 0.9rem;
 }
 
-.contact-item { 
-  display: flex; 
-  align-items: center; 
-  padding: 14px 16px; 
-  cursor: pointer; 
-  border-bottom: 1px solid #f1f5f9; 
+.contact-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
   transition: 0.2s;
   gap: 14px;
 }
 
-.contact-item:hover { 
-  background: #f8fafc; 
+.contact-item:hover {
+  background: #f8fafc;
 }
 
-.active-contact { 
-  background: #eff6ff !important; 
+.active-contact {
+  background: #eff6ff !important;
   border-left: 4px solid #4f46e5;
 }
 
-.contact-avatar { 
-  width: 48px; 
-  height: 48px; 
-  background: #e2e8f0; 
-  color: #64748b; 
-  border-radius: 50%; 
-  display: flex; 
-  justify-content: center; 
-  align-items: center; 
-  font-size: 1.2rem; 
-  font-weight: 700; 
+.contact-avatar {
+  width: 48px;
+  height: 48px;
+  background: #e2e8f0;
+  color: #64748b;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+  font-weight: 700;
   flex-shrink: 0;
 }
 
@@ -2551,258 +2635,258 @@ onUnmounted(() => {
   color: white;
 }
 
-.contact-info { 
-  flex: 1; 
-  overflow: hidden; 
+.contact-info {
+  flex: 1;
+  overflow: hidden;
 }
 
-.contact-top { 
-  display: flex; 
-  justify-content: space-between; 
+.contact-top {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px; 
+  margin-bottom: 4px;
 }
 
-.contact-name { 
-  font-size: 0.95rem; 
-  color: #0f172a; 
-  font-weight: 600; 
-  white-space: nowrap; 
-  overflow: hidden; 
+.contact-name {
+  font-size: 0.95rem;
+  color: #0f172a;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.font-bold { 
-  font-weight: 700; 
+.font-bold {
+  font-weight: 700;
 }
 
-.contact-time { 
-  font-size: 0.75rem; 
-  color: #64748b; 
+.contact-time {
+  font-size: 0.75rem;
+  color: #64748b;
   font-weight: 500;
   flex-shrink: 0;
   margin-left: 8px;
 }
 
-.contact-bottom { 
-  display: flex; 
-  justify-content: space-between; 
+.contact-bottom {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
 }
 
-.contact-msg { 
-  font-size: 0.85rem; 
-  color: #64748b; 
-  white-space: nowrap; 
-  overflow: hidden; 
-  text-overflow: ellipsis; 
+.contact-msg {
+  font-size: 0.85rem;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   flex: 1;
 }
 
-.text-dark { 
-  color: #0f172a; 
+.text-dark {
+  color: #0f172a;
 }
 
-.msg-ticks-inline { 
-  margin-right: 4px; 
+.msg-ticks-inline {
+  margin-right: 4px;
 }
 
-.tick-gray { 
-  color: #8696a0; 
+.tick-gray {
+  color: #8696a0;
 }
 
-.tick-blue { 
-  color: #53bdeb; 
+.tick-blue {
+  color: #53bdeb;
 }
 
-.unread-badge { 
-  background: #10b981; 
-  color: white; 
-  font-size: 0.7rem; 
-  font-weight: 700; 
-  padding: 2px 7px; 
-  border-radius: 10px; 
-  min-width: 20px; 
+.unread-badge {
+  background: #10b981;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  min-width: 20px;
   text-align: center;
   flex-shrink: 0;
   margin-left: 8px;
 }
 
 /* Chat Main */
-.chat-main { 
-  flex: 1; 
-  display: flex; 
-  flex-direction: column; 
-  background: #efeae2; 
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #efeae2;
 }
 
-.active-chat-header { 
-  height: 64px; 
-  background: #f0f2f5; 
-  padding: 0 24px; 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  border-bottom: 1px solid #d1d7db; 
+.active-chat-header {
+  height: 64px;
+  background: #f0f2f5;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #d1d7db;
 }
 
-.active-profile { 
-  display: flex; 
-  align-items: center; 
+.active-profile {
+  display: flex;
+  align-items: center;
   gap: 12px;
 }
 
-.active-profile .avatar { 
-  width: 40px; 
-  height: 40px; 
-  background: #94a3b8; 
-  border-radius: 50%; 
-  color: white; 
-  display: flex; 
-  justify-content: center; 
-  align-items: center; 
-  font-weight: 700; 
+.active-profile .avatar {
+  width: 40px;
+  height: 40px;
+  background: #94a3b8;
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 700;
 }
 
-.profile-details h4 { 
-  color: #111b21; 
-  font-size: 1rem; 
+.profile-details h4 {
+  color: #111b21;
+  font-size: 1rem;
   margin-bottom: 2px;
   font-weight: 600;
 }
 
-.profile-details p { 
-  color: #667781; 
-  font-size: 0.8rem; 
+.profile-details p {
+  color: #667781;
+  font-size: 0.8rem;
 }
 
-.chat-messages-area { 
-  flex: 1; 
-  padding: 24px 8%; 
-  overflow-y: auto; 
-  background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); 
-  background-size: contain; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 4px; 
+.chat-messages-area {
+  flex: 1;
+  padding: 24px 8%;
+  overflow-y: auto;
+  background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+  background-size: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.custom-scrollbar::-webkit-scrollbar { 
-  width: 6px; 
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
 }
 
-.custom-scrollbar::-webkit-scrollbar-track { 
-  background: transparent; 
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb { 
-  background: rgba(0,0,0,0.15); 
-  border-radius: 10px; 
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: 10px;
 }
 
-.encryption-notice { 
-  background: #ffeecd; 
-  color: #54656f; 
-  font-size: 0.8rem; 
-  text-align: center; 
-  padding: 8px 16px; 
-  border-radius: 10px; 
-  align-self: center; 
-  margin-bottom: 16px; 
+.encryption-notice {
+  background: #ffeecd;
+  color: #54656f;
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 8px 16px;
+  border-radius: 10px;
+  align-self: center;
+  margin-bottom: 16px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
-.date-divider { 
-  text-align: center; 
-  margin: 16px 0; 
+.date-divider {
+  text-align: center;
+  margin: 16px 0;
 }
 
-.date-divider span { 
-  background: #ffffff; 
-  color: #54656f; 
-  font-size: 0.8rem; 
-  padding: 6px 14px; 
-  border-radius: 10px; 
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
+.date-divider span {
+  background: #ffffff;
+  color: #54656f;
+  font-size: 0.8rem;
+  padding: 6px 14px;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
   font-weight: 600;
 }
 
-.message-row { 
-  display: flex; 
-  width: 100%; 
-  margin-bottom: 4px; 
+.message-row {
+  display: flex;
+  width: 100%;
+  margin-bottom: 4px;
 }
 
-.msg-out { 
-  justify-content: flex-end; 
+.msg-out {
+  justify-content: flex-end;
 }
 
-.msg-in { 
-  justify-content: flex-start; 
+.msg-in {
+  justify-content: flex-start;
 }
 
-.message-bubble { 
-  max-width: 65%; 
-  padding: 8px 12px 6px 12px; 
-  border-radius: 8px; 
-  position: relative; 
-  box-shadow: 0 1px 1px rgba(0,0,0,0.1); 
+.message-bubble {
+  max-width: 65%;
+  padding: 8px 12px 6px 12px;
+  border-radius: 8px;
+  position: relative;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.1);
 }
 
-.bubble-out { 
-  background: #d9fdd3; 
-  border-top-right-radius: 0; 
+.bubble-out {
+  background: #d9fdd3;
+  border-top-right-radius: 0;
 }
 
-.bubble-in { 
-  background: #ffffff; 
-  border-top-left-radius: 0; 
+.bubble-in {
+  background: #ffffff;
+  border-top-left-radius: 0;
 }
 
-.msg-text { 
-  font-size: 0.9rem; 
-  color: #111b21; 
-  line-height: 1.45; 
-  padding-bottom: 18px; 
-  word-wrap: break-word; 
+.msg-text {
+  font-size: 0.9rem;
+  color: #111b21;
+  line-height: 1.45;
+  padding-bottom: 18px;
+  word-wrap: break-word;
 }
 
-.msg-meta { 
-  position: absolute; 
-  bottom: 4px; 
-  right: 8px; 
-  display: flex; 
-  align-items: center; 
-  gap: 4px; 
+.msg-meta {
+  position: absolute;
+  bottom: 4px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.msg-time { 
-  font-size: 0.65rem; 
-  color: #667781; 
+.msg-time {
+  font-size: 0.65rem;
+  color: #667781;
 }
 
-.msg-ticks { 
-  display: flex; 
-  align-items: center; 
+.msg-ticks {
+  display: flex;
+  align-items: center;
 }
 
-.chat-input-area { 
-  background: #f0f2f5; 
-  padding: 12px 20px; 
-  display: flex; 
-  align-items: center; 
-  gap: 12px; 
-  border-top: 1px solid #d1d7db; 
+.chat-input-area {
+  background: #f0f2f5;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid #d1d7db;
 }
 
-.chat-input-area input { 
-  flex: 1; 
-  padding: 12px 20px; 
-  border-radius: 24px; 
-  border: none; 
-  outline: none; 
-  font-size: 0.95rem; 
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05); 
+.chat-input-area input {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 24px;
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .chat-input-area input:disabled {
@@ -2810,27 +2894,27 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-.send-btn { 
-  background: #00a884; 
-  width: 44px; 
-  height: 44px; 
-  border-radius: 50%; 
-  border: none; 
-  display: flex; 
-  justify-content: center; 
-  align-items: center; 
-  cursor: pointer; 
-  transition: 0.2s; 
+.send-btn {
+  background: #00a884;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: 0.2s;
   flex-shrink: 0;
 }
 
-.send-btn:hover:not(:disabled) { 
-  background: #019071; 
+.send-btn:hover:not(:disabled) {
+  background: #019071;
 }
 
-.send-btn:disabled { 
-  background: #94a3b8; 
-  cursor: not-allowed; 
+.send-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
 }
 
 /* Empty Chat State */
@@ -2886,7 +2970,7 @@ onUnmounted(() => {
   margin: 0 auto;
 }
 
-.settings-card { 
+.settings-card {
   padding: 40px;
 }
 
@@ -3035,17 +3119,17 @@ onUnmounted(() => {
 }
 
 /* ======== ALERTS ======== */
-.alert-box { 
-  padding: 14px 16px; 
-  border-radius: 12px; 
-  font-size: 0.9rem; 
-  display: flex; 
-  align-items: flex-start; 
-  gap: 10px; 
+.alert-box {
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
 }
 
-.alert-box .a-icon { 
-  font-size: 1.2rem; 
+.alert-box .a-icon {
+  font-size: 1.2rem;
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -3061,16 +3145,16 @@ onUnmounted(() => {
   font-weight: 400;
 }
 
-.alert-box.info { 
-  background: #eff6ff; 
-  color: #1e40af; 
-  border: 1px solid #bfdbfe; 
+.alert-box.info {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
 }
 
-.alert-box.warning { 
-  background: #fffbeb; 
-  color: #92400e; 
-  border: 1px solid #fde68a; 
+.alert-box.warning {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
 }
 
 .alert-box.error {
@@ -3080,154 +3164,154 @@ onUnmounted(() => {
 }
 
 /* ======== TRANSITIONS ======== */
-.fade-enter-active, .fade-leave-active { 
-  transition: opacity 0.3s ease, transform 0.3s ease; 
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.fade-enter-from, .fade-leave-to { 
-  opacity: 0; 
-  transform: translateY(10px); 
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
 }
 
-.fade-slide-enter-active, .fade-slide-leave-active { 
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+.fade-slide-enter-active, .fade-slide-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.fade-slide-enter-from { 
-  opacity: 0; 
-  transform: scale(0.98) translateY(10px); 
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: scale(0.98) translateY(10px);
 }
 
-.fade-slide-leave-to { 
-  opacity: 0; 
-  transform: scale(1.02) translateY(-10px); 
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: scale(1.02) translateY(-10px);
 }
 
 /* ======== LOADER ======== */
-.loader-small { 
-  display: inline-block; 
-  border: 3px solid rgba(255,255,255,0.3); 
-  border-top: 3px solid white; 
-  border-radius: 50%; 
-  width: 20px; 
-  height: 20px; 
-  animation: spin 1s linear infinite; 
+.loader-small {
+  display: inline-block;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
 }
 
 /* ======== RESPONSIVE ======== */
-.back-btn-mobile { 
-  display: none; 
-  background: none; 
-  border: none; 
-  font-size: 1.3rem; 
-  margin-right: 10px; 
-  cursor: pointer; 
+.back-btn-mobile {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  margin-right: 10px;
+  cursor: pointer;
 }
 
 @media (max-width: 992px) {
-  .dashboard-layout { 
-    flex-direction: column; 
-    overflow-y: auto; 
+  .dashboard-layout {
+    flex-direction: column;
+    overflow-y: auto;
   }
-  
-  .sidebar { 
-    width: 100%; 
+
+  .sidebar {
+    width: 100%;
     flex-shrink: 1;
   }
-  
+
   .sidebar-inner {
     padding: 16px;
   }
-  
-  .nav-menu { 
-    display: flex; 
-    overflow-x: auto; 
-    gap: 8px; 
-    padding: 0; 
-    margin-bottom: 12px; 
+
+  .nav-menu {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+    padding: 0;
+    margin-bottom: 12px;
     flex-direction: row;
   }
-  
-  .menu-label { 
-    display: none; 
+
+  .menu-label {
+    display: none;
   }
-  
-  .nav-btn { 
-    width: auto; 
-    white-space: nowrap; 
-    padding: 10px 14px; 
-    margin: 0; 
+
+  .nav-btn {
+    width: auto;
+    white-space: nowrap;
+    padding: 10px 14px;
+    margin: 0;
   }
-  
+
   .nav-text {
     display: none;
   }
-  
-  .sidebar-footer { 
-    display: none; 
+
+  .sidebar-footer {
+    display: none;
   }
-  
-  .topbar { 
-    padding: 16px; 
-    height: auto; 
-    flex-direction: column; 
-    gap: 12px; 
+
+  .topbar {
+    padding: 16px;
+    height: auto;
+    flex-direction: column;
+    gap: 12px;
   }
-  
-  .topbar-right { 
-    flex-wrap: wrap; 
-    width: 100%; 
+
+  .topbar-right {
+    flex-wrap: wrap;
+    width: 100%;
   }
-  
-  .content-area { 
-    padding: 16px; 
+
+  .content-area {
+    padding: 16px;
   }
-  
-  .grid-layout { 
-    grid-template-columns: 1fr; 
+
+  .grid-layout {
+    grid-template-columns: 1fr;
   }
-  
+
   .banner-illustration {
     display: none;
   }
-  
-  .chat-layout { 
-    flex-direction: column; 
-    height: 80vh; 
+
+  .chat-layout {
+    flex-direction: column;
+    height: 80vh;
   }
-  
-  .chat-sidebar.hide-on-mobile { 
-    display: none; 
+
+  .chat-sidebar.hide-on-mobile {
+    display: none;
   }
-  
-  .chat-sidebar { 
-    width: 100%; 
-    height: 100%; 
-    border-right: none; 
+
+  .chat-sidebar {
+    width: 100%;
+    height: 100%;
+    border-right: none;
   }
-  
-  .chat-main { 
-    display: none; 
-    width: 100%; 
-    height: 100%; 
+
+  .chat-main {
+    display: none;
+    width: 100%;
+    height: 100%;
   }
-  
-  .chat-main.show-on-mobile { 
-    display: flex; 
+
+  .chat-main.show-on-mobile {
+    display: flex;
   }
-  
-  .chat-main.empty-state { 
-    display: none; 
+
+  .chat-main.empty-state {
+    display: none;
   }
-  
-  .back-btn-mobile { 
-    display: block; 
+
+  .back-btn-mobile {
+    display: block;
   }
-  
-  .message-bubble { 
-    max-width: 85%; 
+
+  .message-bubble {
+    max-width: 85%;
   }
-  
+
   .banner-stats {
     flex-wrap: wrap;
   }
@@ -3237,27 +3321,27 @@ onUnmounted(() => {
   .welcome-banner {
     padding: 24px;
   }
-  
+
   .banner-text-section h2 {
     font-size: 1.5rem;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .action-cards {
     grid-template-columns: 1fr 1fr;
   }
-  
+
   .card {
     padding: 20px;
   }
-  
+
   .settings-card {
     padding: 24px;
   }
-  
+
   .modal-card {
     margin: 16px;
   }
