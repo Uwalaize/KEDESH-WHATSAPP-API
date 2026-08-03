@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard-layout">
 
-    <!-- MODAL YA KUONGEZA SALIO (IMEBOreshWA) -->
+    <!-- MODAL YA KUONGEZA SALIO -->
     <transition name="fade">
       <div v-if="showTopupModal" class="modal-overlay" @click.self="showTopupModal = false">
         <div class="modal-card">
@@ -56,7 +56,7 @@
       </div>
     </transition>
 
-    <!-- MENU YA PEMBENI (SIDEBAR) - IMEBOreshWA -->
+    <!-- MENU YA PEMBENI (SIDEBAR) -->
     <aside class="sidebar">
       <div class="sidebar-inner">
         <div class="brand">
@@ -127,7 +127,7 @@
     </aside>
 
     <main class="main-content">
-      <!-- HEADER YA JUU - IMEBOreshWA -->
+      <!-- HEADER YA JUU -->
       <header class="topbar">
         <div class="topbar-left">
           <div class="page-title">
@@ -164,7 +164,6 @@
 
           <!-- ======================== HOME VIEW ======================== -->
           <div v-if="currentView === 'home'" key="home" class="view-panel">
-
             <!-- ONYO LA SETUP -->
             <div v-if="!userData?.wabaId || !userData?.whatsappPhoneId" class="setup-banner">
               <div class="setup-icon">⚠️</div>
@@ -531,7 +530,7 @@
                             <path d="M10.91 3.316l-4.203 4.204-1.36-1.36a.996.996 0 0 0-1.408 0 .996.996 0 0 0 0 1.409l2.064 2.064a.996.996 0 0 0 1.408 0l4.908-4.908a.996.996 0 0 0 0-1.409.996.996 0 0 0-1.409 0z"></path>
                           </svg>
                         </span>
-                        {{ contact.lastMsg }}
+                        {{ cleanMessagePreview(contact.lastMsg) }}
                       </p>
                       <span v-if="contact.unread > 0" class="unread-badge">{{ contact.unread }}</span>
                     </div>
@@ -562,7 +561,10 @@
 
                 <div v-for="msg in chatMessages" :key="msg.id" class="message-row" :class="msg.direction === 'OUTBOUND' ? 'msg-out' : 'msg-in'">
                   <div class="message-bubble" :class="msg.direction === 'OUTBOUND' ? 'bubble-out' : 'bubble-in'">
-                    <p class="msg-text">{{ msg.text }}</p>
+
+                    <!-- KODI MPYA: RENDER CONTENT INAYOTAMBUA MEDIA YOTE -->
+                    <div class="msg-content-wrapper" v-html="renderMessageContent(msg.text)"></div>
+
                     <div class="msg-meta">
                       <span class="msg-time">{{ msg.time }}</span>
                       <span v-if="msg.direction === 'OUTBOUND'" class="msg-ticks" :class="msg.status === 'READ' ? 'tick-blue' : 'tick-gray'">
@@ -744,6 +746,48 @@ const currentDate = computed(() => {
 
 const formatMoney = (amount) => {
   return Number(amount || 0).toLocaleString();
+};
+
+// ==========================================
+// 🎨 MEDIA PARSING LOGIC (KUBADILI TEXT KUWA PICHA/VIDEO)
+// ==========================================
+const renderMessageContent = (text) => {
+  if (!text) return '';
+
+  // Angalia Picha
+  if (text.startsWith('[MEDIA:IMAGE]')) {
+    const url = text.replace('[MEDIA:IMAGE]', '');
+    return `<div class="media-container"><img src="${url}" class="chat-image" alt="Picha toka kwa mteja" loading="lazy" /></div>`;
+  }
+  // Angalia Video
+  else if (text.startsWith('[MEDIA:VIDEO]')) {
+    const url = text.replace('[MEDIA:VIDEO]', '');
+    return `<div class="media-container"><video src="${url}" controls class="chat-video" preload="metadata"></video></div>`;
+  }
+  // Angalia Audio/Voice Notes
+  else if (text.startsWith('[MEDIA:AUDIO]')) {
+    const url = text.replace('[MEDIA:AUDIO]', '');
+    return `<div class="media-container audio-container"><audio src="${url}" controls class="chat-audio"></audio></div>`;
+  }
+  // Angalia Documents
+  else if (text.startsWith('[MEDIA:DOCUMENT]')) {
+    const url = text.replace('[MEDIA:DOCUMENT]', '');
+    return `<a href="${url}" target="_blank" class="document-link"><span class="doc-icon">📄</span> Pakua Faili (Document)</a>`;
+  }
+
+  // Kama ni meseji ya kawaida au template, iache kama ilivyo lakini ruhusu links zibonyezwe
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  return `<p class="msg-text">${text.replace(urlRegex, '<a href="$1" target="_blank" style="color: #0284c7; text-decoration: underline;">$1</a>')}</p>`;
+};
+
+// Kusafisha preview kwenye sidebar isionyeshe link ndefu
+const cleanMessagePreview = (text) => {
+  if (!text) return '...';
+  if (text.startsWith('[MEDIA:IMAGE]')) return '📷 Picha';
+  if (text.startsWith('[MEDIA:VIDEO]')) return '🎥 Video';
+  if (text.startsWith('[MEDIA:AUDIO]')) return '🎵 Sauti (Voice Note)';
+  if (text.startsWith('[MEDIA:DOCUMENT]')) return '📄 Faili (Document)';
+  return text;
 };
 
 // ==========================================
@@ -2137,7 +2181,7 @@ onUnmounted(() => {
   line-height: 1.4;
 }
 
-/* ======== BULK SMS MABADILIKO YA FORM (HAPA NIMEBORESHA SANA MAANDISHI YAONEKANE) ======== */
+/* ======== BULK SMS ======== */
 .grid-layout {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -2183,7 +2227,6 @@ onUnmounted(() => {
   color: #ef4444;
 }
 
-/* KODI MPYA: Imesukwa kusuluhisha tatizo la maandishi kutoonekana */
 .form-control {
   width: 100%;
   padding: 14px 18px;
@@ -2522,7 +2565,7 @@ onUnmounted(() => {
   color: #334155;
 }
 
-/* KODI MPYA YA VICHUJIO (CHAT FILTERS) */
+/* CHAT FILTERS */
 .chat-filters {
   display: flex;
   padding: 8px 16px 12px 16px;
@@ -2827,10 +2870,10 @@ onUnmounted(() => {
 
 .message-bubble {
   max-width: 65%;
-  padding: 8px 12px 6px 12px;
-  border-radius: 8px;
+  padding: 6px;
+  border-radius: 12px;
   position: relative;
-  box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
 }
 
 .bubble-out {
@@ -2843,26 +2886,106 @@ onUnmounted(() => {
   border-top-left-radius: 0;
 }
 
+/* ==========================================
+   CSS MPYA: STYLES ZA MEDIA (PICHA, VIDEO, SAUTI)
+   ========================================== */
+.msg-content-wrapper {
+  position: relative;
+}
+
+/* Image & Video Containers */
+.media-container {
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0,0,0,0.03);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 320px; /* Limits max size to look like real WhatsApp */
+  margin-bottom: 18px; /* Space for timestamps */
+}
+
+.chat-image {
+  width: 100%;
+  max-height: 350px;
+  object-fit: cover;
+  display: block;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.chat-video {
+  width: 100%;
+  max-height: 350px;
+  border-radius: 8px;
+  background: black;
+}
+
+/* Audio Player */
+.audio-container {
+  background: transparent;
+  padding: 4px;
+  max-width: 300px;
+  min-width: 250px;
+  margin-bottom: 22px;
+}
+
+.chat-audio {
+  width: 100%;
+  height: 40px;
+  outline: none;
+}
+
+/* Document Link */
+.document-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(0,0,0,0.04);
+  border-radius: 8px;
+  color: #0f172a;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 20px;
+  border: 1px solid rgba(0,0,0,0.05);
+  transition: 0.2s;
+}
+
+.document-link:hover {
+  background: rgba(0,0,0,0.08);
+}
+
+.doc-icon {
+  font-size: 1.5rem;
+}
+
+/* Text formatting inside bubble */
 .msg-text {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #111b21;
-  line-height: 1.45;
-  padding-bottom: 18px;
+  line-height: 1.5;
+  padding: 4px 8px 18px 8px;
   word-wrap: break-word;
 }
 
 .msg-meta {
   position: absolute;
-  bottom: 4px;
-  right: 8px;
+  bottom: 6px;
+  right: 10px;
   display: flex;
   align-items: center;
   gap: 4px;
+  background: rgba(255,255,255,0.7); /* Slightly transparent background for readability over images */
+  padding: 2px 6px;
+  border-radius: 10px;
 }
 
 .msg-time {
   font-size: 0.65rem;
   color: #667781;
+  font-weight: 600;
 }
 
 .msg-ticks {

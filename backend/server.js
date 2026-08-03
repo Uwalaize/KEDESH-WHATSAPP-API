@@ -7,6 +7,8 @@ const axios = require('axios');
 const bcrypt = require('bcryptjs'); 
 const jwt = require('jsonwebtoken'); 
 const { PrismaClient } = require('@prisma/client'); 
+const fs = require('fs');
+const path = require('path');
 
 const http = require('http');
 const { Server } = require('socket.io');
@@ -38,10 +40,20 @@ if (!META_VERIFY_TOKEN || !META_ACCESS_TOKEN || !META_APP_ID || !META_APP_SECRET
     process.exit(1); 
 }
 
+// ==========================================
+// 📁 MFUMO WA KUHIFADHI MAFAILI (MEDIA)
+// ==========================================
+const mediaDir = path.join(__dirname, 'public', 'media');
+if (!fs.existsSync(mediaDir)) {
+    fs.mkdirSync(mediaDir, { recursive: true });
+}
+// Kuruhusu Frontend isome picha/video moja kwa moja kupitia link
+app.use('/media', express.static(mediaDir));
+
 app.use(helmet()); 
 app.use(cors()); 
-app.use(express.json({ limit: '5mb' })); 
-app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+app.use(express.json({ limit: '50mb' })); 
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 const apiLimiter = rateLimit({ 
     windowMs: 1 * 60 * 1000, max: 200, 
@@ -97,6 +109,49 @@ const verifyCustomerToken = async (customerToken) => {
         { timeout: 10000 }
     );
     return response.data;
+};
+
+// ==========================================
+// 🚀 MEDIA DOWNLOADER ENGINE (META API)
+// ==========================================
+const downloadMetaMedia = async (mediaId, mimeType) => {
+    try {
+        // 1. Pata URL halisi ya Meta kupitia Media ID
+        const resUrl = await axios.get(`https://graph.facebook.com/v20.0/${mediaId}`, {
+            headers: { 'Authorization': `Bearer ${META_ACCESS_TOKEN}` }
+        });
+        const mediaUrl = resUrl.data.url;
+
+        // 2. Pakua (Download) Binary Data ya hilo faili
+        const response = await axios({
+            method: 'GET',
+            url: mediaUrl,
+            headers: { 'Authorization': `Bearer ${META_ACCESS_TOKEN}` },
+            responseType: 'stream'
+        });
+
+        // 3. Tengeneza jina na Extension sahihi
+        const extMatch = mimeType.match(/\/(.*?)(;|$)/);
+        let ext = extMatch ? extMatch[1] : 'bin';
+        if (ext === 'ogg') ext = 'mp3'; // WhatsApp hutumia ogg kwa sauti, tunaibadili iwe mp3 kurahisisha Frontend
+        
+        const fileName = `KEDESH_${Date.now()}_${Math.floor(Math.random()*10000)}.${ext}`;
+        const filePath = path.join(mediaDir, fileName);
+
+        const writer = fs.createWriteStream(filePath);
+        response.data.pipe(writer);
+
+        await new Promise((resolve, reject) => {
+            writer.on('finish', resolve);
+            writer.on('error', reject);
+        });
+
+        // 4. Rudisha Public Link itakayosomwa na Mfumo wetu
+        return `https://api.kedeshlimited.com/media/${fileName}`;
+    } catch (error) {
+        console.error(`❌ [MEDIA ERROR] Imeshindwa kupakua faili (ID: ${mediaId}):`, error.message);
+        return null;
+    }
 };
 
 // ==========================================
@@ -338,7 +393,6 @@ app.post('/webhook', async (req, res) => {
                     for (const statusObj of value.statuses) {
                         const newStatus = statusObj.status.toUpperCase();
                         
-                        // Tunasubiri sekunde 1 ili Mfumo wa Bulk umalize kusave Meseji Kwanza (Race Condition Fix)
                         let existingMsg = await prisma.message.findFirst({ where: { metaMsgId: statusObj.id } });
                         if(!existingMsg) {
                             await sleep(1000); 
@@ -349,20 +403,40 @@ app.post('/webhook', async (req, res) => {
                             await prisma.message.update({ where: { id: existingMsg.id }, data: { status: newStatus } });
                             io.to(business.id).emit('messageStatusUpdate', { metaMsgId: statusObj.id, status: newStatus });
                             console.log(`   ✅ [TIKI LIVE] -> ${newStatus}`);
-                        } else {
-                            console.log(`   ⚠️ [TIKI IGNORED] Meseji ID: ${statusObj.id} haipo kwenye DB yetu.`);
                         }
                     }
                 }
 
-                // B) KUKAMATA MESEJI MTEJA AKIJIBU (INBOUND)
+                // B) KUKAMATA MESEJI MTEJA AKIJIBU (INBOUND) NAKUSOMA MAFAILI YOTE
                 if (value.messages?.length > 0) {
                     for (const message of value.messages) {
                         const phoneNumber = message.from;
                         const customerName = value.contacts?.[0]?.profile?.name || phoneNumber;
-                        let msgBody = message.type === 'text' ? message.text.body : `📎 [Faili: ${message.type}]`;
+                        const msgType = message.type;
+                        
+                        let msgBody = '';
 
-                        console.log(`   📥 [INBOX KUTOKA MTEJA] +${phoneNumber} -> "${msgBody}"`);
+                        // LOGIC MPYA YA KUSOMA NA KUDOWNLOAD PICHA, VIDEO, AUDIO, NA DOCUMENTS
+                        if (msgType === 'text') {
+                            msgBody = message.text.body;
+                        } else if (['image', 'video', 'audio', 'document', 'sticker'].includes(msgType)) {
+                            const mediaObj = message[msgType];
+                            if (mediaObj && mediaObj.id) {
+                                console.log(`   ⏳ [MEDIA ENGINE] Inapakua ${msgType.toUpperCase()} kutoka Meta (ID: ${mediaObj.id})...`);
+                                const fileUrl = await downloadMetaMedia(mediaObj.id, mediaObj.mime_type);
+                                
+                                if (fileUrl) {
+                                    // Tunaiwekea Tag Maalum ambayo Frontend itaitambua kirahisi
+                                    msgBody = `[MEDIA:${msgType.toUpperCase()}]${fileUrl}`;
+                                } else {
+                                    msgBody = `📎 [Faili: ${msgType}] - Imeshindwa kupakua faili.`;
+                                }
+                            }
+                        } else {
+                            msgBody = `📎 [Faili: Aina isiyojulikana (${msgType})]`;
+                        }
+
+                        console.log(`   📥 [INBOX KUTOKA MTEJA] +${phoneNumber} -> Format: ${msgType}`);
 
                         const dbContact = await findOrCreateContact(business.id, phoneNumber, customerName);
                         const savedMsg = await saveMessageSafe({ 
@@ -372,7 +446,7 @@ app.post('/webhook', async (req, res) => {
                             direction: 'INBOUND', 
                             content: msgBody, 
                             status: 'RECEIVED',
-                            messageType: message.type 
+                            messageType: msgType 
                         });
 
                         if (savedMsg) {
@@ -382,7 +456,7 @@ app.post('/webhook', async (req, res) => {
                                 phoneNumber, 
                                 message: { id: savedMsg.id, content: savedMsg.content, direction: savedMsg.direction, status: savedMsg.status, createdAt: savedMsg.createdAt } 
                             });
-                            console.log(`   ✅ [INBOX] Ujumbe umeingia kwenye Live Chat ya ${business.businessName}!`);
+                            console.log(`   ✅ [INBOX] Ujumbe/Faili limeingia kwenye Live Chat ya ${business.businessName}!`);
                         }
                     }
                 }
@@ -494,12 +568,12 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
     } catch (error) { res.status(500).json({ success: false, error: "Hitilafu imetokea." }); }
 });
 
-app.get('/', (req, res) => { res.json({ status: "Online 🟢", version: "2.8.0 Premium" }); });
+app.get('/', (req, res) => { res.json({ status: "Online 🟢", version: "3.0.0 Premium (Media Support)" }); });
 app.use((err, req, res, next) => { res.status(500).json({ success: false, error: "Hitilafu isiyotarajiwa." }); });
 
 server.listen(PORT, () => {
     console.log(`\n=============================================================`);
-    console.log(` 🚀 KEDESH SAAS BACKEND v2.8.0 IMESIMAMA IMARA `);
-    console.log(` 🛡️ FIX: Ultimate Webhook & Race Condition Fix`);
+    console.log(` 🚀 KEDESH SAAS BACKEND v3.0.0 IMESIMAMA IMARA `);
+    console.log(` 🛡️ ENGINE: Media Downloader Inafanya Kazi Asilimia 100!`);
     console.log(`=============================================================\n`);
 });
