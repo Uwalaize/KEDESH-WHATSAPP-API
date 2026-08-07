@@ -41,11 +41,11 @@ const corsOptions = {
     optionsSuccessStatus: 200
 };
 
-app.use(helmet({ crossOriginResourcePolicy: false })); // Inaruhusu picha kusomeka nje
+app.use(helmet({ crossOriginResourcePolicy: false })); 
 app.use(cors(corsOptions));
 
-// 🔴 SULUHISHO LA CRASH LOOP (Imebadilishwa kutoka '*' kwenda '/*')
-app.options('/*', cors(corsOptions)); // Kuruhusu Preflight Requests zote
+// 🔴 SULUHISHO LA CRASH: Tunatumia Regular Expression /.*/ badala ya String '/*'
+app.options(/.*/, cors(corsOptions)); 
 
 const io = new Server(server, {
     cors: { 
@@ -58,7 +58,8 @@ const io = new Server(server, {
     pingInterval: 25000
 });
 
-const PORT = process.env.PORT || 5300; 
+// 🔴 SULUHISHO LA PORT CONFLICT: Imewekwa Hardcoded ili kuepuka usumbufu wa .env
+const PORT = 5300; 
 const prisma = new PrismaClient(); 
 
 const BULK_SMS_COST = 84;
@@ -86,7 +87,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 const apiLimiter = rateLimit({ 
-    windowMs: 1 * 60 * 1000, max: 500, // Imeongezwa kuwa 500 kuruhusu mzigo mkubwa
+    windowMs: 1 * 60 * 1000, max: 500, 
     standardHeaders: true, legacyHeaders: false,
     message: { success: false, error: "Umefikia kikomo cha API. Subiri dakika 1." }
 });
@@ -606,7 +607,7 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
     }
 });
 
-app.get('/', (req, res) => { res.json({ status: "Online 🟢", version: "3.5.0 Enterprise (Rock Solid)" }); });
+app.get('/', (req, res) => { res.json({ status: "Online 🟢", version: "3.6.0 Enterprise (Rock Solid)" }); });
 
 // =====================================================================
 // 🛡️ 11. ENTERPRISE ERROR SHIELDS & GRACEFUL SHUTDOWN
@@ -631,7 +632,6 @@ process.on('unhandledRejection', (reason, promise) => {
 // Kudaka "Uncaught Exceptions" (Makosa makubwa sana)
 process.on('uncaughtException', (error) => {
     console.error('🔥 [FATAL] Uncaught Exception:', error);
-    // Hatuachi server izime kiholela, tunadhibiti.
 });
 
 // Ulinzi wa kutenganisha "Port Conflicts" (Kama EADDRINUSE)
@@ -653,15 +653,15 @@ const shutdown = async () => {
     });
 };
 
-process.on('SIGTERM', shutdown); // Inatumika sana na PM2
-process.on('SIGINT', shutdown);  // Inatumika ukibonyeza Ctrl + C
+process.on('SIGTERM', shutdown); 
+process.on('SIGINT', shutdown);  
 
 // =====================================================================
 // 🚀 12. KUWASHA MTAMBO
 // =====================================================================
 server.listen(PORT, () => {
     console.log(`\n=============================================================`);
-    console.log(` 🚀 KEDESH SAAS BACKEND v3.5.0 (ENTERPRISE) IMESIMAMA IMARA `);
+    console.log(` 🚀 KEDESH SAAS BACKEND v3.6.0 (ENTERPRISE) IMESIMAMA IMARA `);
     console.log(` 🛡️ ENGINE: Background SMS, Port Shield & Graceful Shutdown ACTIVE!`);
     console.log(` 🌐 PORT: Inasikiliza kwenye namba ${PORT}`);
     console.log(`=============================================================\n`);
