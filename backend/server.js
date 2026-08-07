@@ -57,9 +57,9 @@ const io = new Server(server, {
 });
 
 // ==========================================
-// ⚙️ 2. CORE SETTINGS & DATABASE
+// ⚙️ 3. CORE SETTINGS & DATABASE
 // ==========================================
-const PORT = 3000; 
+const PORT = 5300; 
 const prisma = new PrismaClient(); 
 
 const BULK_SMS_COST = 84;
@@ -75,7 +75,7 @@ if (!META_VERIFY_TOKEN || !META_ACCESS_TOKEN || !META_APP_ID || !META_APP_SECRET
 }
 
 // ==========================================
-// 📁 3. MFUMO WA KUHIFADHI MAFAILI (MEDIA)
+// 📁 4. MFUMO WA KUHIFADHI MAFAILI (MEDIA)
 // ==========================================
 const mediaDir = path.join(__dirname, 'public', 'media');
 if (!fs.existsSync(mediaDir)) {
@@ -87,7 +87,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // ==========================================
-// 🚦 4. RATE LIMITERS (KUZUIA SPAM)
+// 🚦 5. RATE LIMITERS (KUZUIA SPAM)
 // ==========================================
 const apiLimiter = rateLimit({ 
     windowMs: 1 * 60 * 1000, max: 500, 
@@ -97,7 +97,7 @@ const apiLimiter = rateLimit({
 app.use('/api/', apiLimiter); 
 
 const authLimiter = rateLimit({ 
-    windowMs: 15 * 60 * 1000, max: 50, 
+    windowMs: 15 * 60 * 1000, max: 20, 
     standardHeaders: true, legacyHeaders: false,
     message: { success: false, error: "Umejaribu kuingia mara nyingi mno. Subiri dakika 15." } 
 });
@@ -120,13 +120,15 @@ const verifyToken = (req, res, next) => {
 };
 
 // ==========================================
-// 🤖 5. META API HELPERS (MABORESHO MAKUBWA HAPA)
+// 🤖 6. META API HELPERS (X-RAY ENGINE)
 // ==========================================
 const sendWhatsAppMessageAsAdmin = async (business, phone, payload, type = 'text') => {
-    // 🔴 HAPA NDIPO TATIZO LILIPOKUWA LIMEJIFICHA:
-    // Tunatumia Token ya biashara yenyewe (Kama ipo) badala ya kutegemea ya kwenye .env pekee
-    const activeToken = business.metaAccessToken || META_ACCESS_TOKEN;
+    // 🔴 SULUHISHO: Meta haitaki namba zenye alama ya jumlisha (+), tunaiondoa hapa
+    const cleanPhone = phone.replace('+', '');
     
+    // 🔴 SULUHISHO: Tunatumia Token ya mteja (kama ipo) la sivyo tunatumia ya mfumo
+    const activeToken = business.metaAccessToken || META_ACCESS_TOKEN;
+
     return await axios({
         method: 'POST',
         url: `https://graph.facebook.com/v20.0/${business.whatsappPhoneId}/messages`,
@@ -136,7 +138,7 @@ const sendWhatsAppMessageAsAdmin = async (business, phone, payload, type = 'text
         },
         data: {
             messaging_product: "whatsapp",
-            to: phone,
+            to: cleanPhone,
             type: type,
             ...(type === 'text' ? { text: { body: payload } } : { template: payload })
         },
@@ -188,7 +190,7 @@ const downloadMetaMedia = async (mediaId, mimeType) => {
 };
 
 // ==========================================
-// 🗄️ 6. DATABASE HELPERS
+// 🗄️ 7. DATABASE HELPERS
 // ==========================================
 const findOrCreateContact = async (businessId, phoneNumber, name) => {
     let contact = await prisma.contact.findFirst({ where: { businessId, phoneNumber } });
@@ -214,7 +216,7 @@ const saveMessageSafe = async (messageData) => {
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // ========================================================
-// ⚡ 7. SOCKET.IO ENGINE
+// ⚡ 8. SOCKET.IO ENGINE
 // ========================================================
 io.use((socket, next) => {
     const token = socket.handshake.auth?.token || socket.handshake.query?.token;
@@ -233,7 +235,7 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// 📊 8. DASHBOARD STATS & WALLET
+// 📊 9. DASHBOARD STATS & WALLET
 // ==========================================
 app.get('/api/dashboard/stats', verifyToken, async (req, res) => {
     try {
@@ -258,7 +260,7 @@ app.get('/api/wallet/balance', verifyToken, async (req, res) => {
 });
 
 // ==========================================
-// 🔐 9. AUTHENTICATION & FACEBOOK LOGIN
+// 🔐 10. AUTHENTICATION & FACEBOOK LOGIN
 // ==========================================
 app.post('/api/auth/register', authLimiter, async (req, res) => {
     try {
@@ -378,7 +380,7 @@ app.post('/api/settings/update', verifyToken, async (req, res) => {
 });
 
 // ==========================================
-// 📡 10. WEBHOOK YA META
+// 📡 11. WEBHOOK YA META
 // ==========================================
 app.get('/webhook', (req, res) => {
     const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query;
@@ -478,7 +480,7 @@ app.post('/webhook', async (req, res) => {
 });
 
 // ==========================================
-// 📱 11. LIVE CHAT API (MABORESHO YA KUSOMA ERROR)
+// 📱 12. LIVE CHAT API (X-RAY INAFANYA KAZI HAPA)
 // ==========================================
 app.get('/api/chat/contacts', verifyToken, async (req, res) => {
     try {
@@ -523,17 +525,18 @@ app.post('/api/chat/send', verifyToken, async (req, res) => {
 
         res.json({ success: true, message: 'Imetumwa', newBalance: updatedBiz.walletBalance });
     } catch (error) { 
-        // 🔴 HAPA TUNAMFUMANIA META! Tunachapisha kosa lile hasa alilolikataa
-        const metaError = error.response ? error.response.data : error.message;
+        // 🔴 HAPA NDIPO X-RAY INAPOFANYA KAZI (Tutaona ujumbe kamili wa Meta kwenye PM2 Logs)
+        const metaErrorDetail = error.response ? error.response.data : error.message;
         console.error("\n❌❌❌ KOSA KUTOKA META API (LIVE CHAT) ❌❌❌");
-        console.error(JSON.stringify(metaError, null, 2));
+        console.error(JSON.stringify(metaErrorDetail, null, 2));
         console.error("=========================================\n");
-        res.status(500).json({ success: false, error: "Meta wamekataa ujumbe. Tazama logi za Server.", meta_details: metaError }); 
+        
+        res.status(500).json({ success: false, error: "Meta wamekataa ujumbe. Tazama PM2 Logs.", meta_error: metaErrorDetail }); 
     }
 });
 
 // =====================================================================
-// 🚀 12. BULK SMS ENGINE
+// 🚀 13. PREMIUM BULK SMS ENGINE (BATCHING & BACKGROUND PROCESSING)
 // =====================================================================
 app.post('/api/send-bulk', verifyToken, async (req, res) => {
     try {
@@ -585,9 +588,9 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
                         });
                     } catch (error) {
                         metaFailedCount++;
-                        // 🔴 KUDHIBITI MAKOSA YA KAMPENI
-                        const metaError = error.response ? error.response.data : error.message;
-                        console.error(`❌ Meseji kwenda ${phone} imefeli:`, JSON.stringify(metaError));
+                        // 🔴 X-RAY KWA BULK SMS PYA
+                        const metaErrorDetail = error.response ? error.response.data : error.message;
+                        console.error(`❌ Meseji kwenda ${phone} imefeli. Sababu ya Meta:`, JSON.stringify(metaErrorDetail));
                     }
                 });
 
@@ -608,6 +611,8 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
                 newBalance 
             });
 
+            console.log(`✅ KAMPENI [${campaignName}] IMEKAMILIKA! Zilizofika: ${metaSuccessCount}, Zilizofeli: ${metaFailedCount}`);
+
         })(); 
 
     } catch (error) { 
@@ -617,10 +622,10 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
     }
 });
 
-app.get('/', (req, res) => { res.json({ status: "Online 🟢", version: "4.1.0 (X-Ray & Multi-Tenant Meta Tokens)" }); });
+app.get('/', (req, res) => { res.json({ status: "Online 🟢", version: "5.0.0 (X-Ray Tracker Imewekwa)" }); });
 
 // =====================================================================
-// 🛡️ 13. ENTERPRISE ERROR SHIELDS & GRACEFUL SHUTDOWN
+// 🛡️ 14. ENTERPRISE ERROR SHIELDS & GRACEFUL SHUTDOWN
 // =====================================================================
 app.use((req, res, next) => {
     res.status(404).json({ success: false, error: "Njia hii haipo kwenye Mfumo." });
@@ -641,7 +646,7 @@ process.on('uncaughtException', (error) => {
 
 server.on('error', (e) => {
     if (e.code === 'EADDRINUSE') {
-        console.error(`❌ PORT ${PORT} INATUMIKA NA MFUMO MWINGINE! Hakikisha Port ipo wazi.`);
+        console.error(`❌ PORT ${PORT} INATUMIKA NA MFUMO MWINGINE!`);
         process.exit(1);
     }
 });
@@ -658,12 +663,9 @@ const shutdown = async () => {
 process.on('SIGTERM', shutdown); 
 process.on('SIGINT', shutdown);  
 
-// =====================================================================
-// 🚀 14. KUWASHA MTAMBO
-// =====================================================================
 server.listen(PORT, () => {
     console.log(`\n=============================================================`);
-    console.log(` 🚀 KEDESH SAAS BACKEND v4.1.0 (PORT 3000) IMESIMAMA IMARA `);
-    console.log(` 🌐 PORT: Inasikiliza kwenye namba ${PORT} (Sawa na NGINX inavyotaka)`);
+    console.log(` 🚀 KEDESH SAAS BACKEND v5.0.0 (PORT 5300) IMESIMAMA IMARA `);
+    console.log(` 🔍 ENGINE: X-Ray Scanner ipo kazini kudaka makosa ya Meta!`);
     console.log(`=============================================================\n`);
 });
