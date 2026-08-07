@@ -43,7 +43,9 @@ const corsOptions = {
 
 app.use(helmet({ crossOriginResourcePolicy: false })); // Inaruhusu picha kusomeka nje
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Kuruhusu Preflight Requests zote
+
+// 🔴 SULUHISHO LA CRASH LOOP (Imebadilishwa kutoka '*' kwenda '/*')
+app.options('/*', cors(corsOptions)); // Kuruhusu Preflight Requests zote
 
 const io = new Server(server, {
     cors: { 
