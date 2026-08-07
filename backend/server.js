@@ -18,14 +18,42 @@ app.set('trust proxy', 1);
 
 const server = http.createServer(app); 
 
+// ==========================================
+// 🛡️ 1. CORS CONFIGURATION (SULUHISHO LA ERROR YA BROWSER)
+// ==========================================
+const allowedOrigins = [
+    'https://admin.kedeshlimited.com', 
+    'https://bulksms.kedeshlimited.com',
+    'http://localhost:5173',
+    'https://apibulksms.kedeshlimited.com' // Kuzuia soketi kukatika
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // Ruhusu requests zisizo na origin (kama Postman) au zile zilizopo kwenye allowedOrigins
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Kizuizi cha CORS: Hauruhusiwi.'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+    credentials: true
+}));
+
 const io = new Server(server, {
-    cors: { origin: '*', methods: ['GET', 'POST'] },
+    cors: { 
+        origin: allowedOrigins, 
+        methods: ['GET', 'POST'],
+        credentials: true
+    },
     transports: ['websocket', 'polling'],
     pingTimeout: 60000,
     pingInterval: 25000
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000; // Imerudishwa kuwa 5000 kama logi zako za nyuma zilivyoonyesha
 const prisma = new PrismaClient(); 
 
 const BULK_SMS_COST = 84;
@@ -41,17 +69,15 @@ if (!META_VERIFY_TOKEN || !META_ACCESS_TOKEN || !META_APP_ID || !META_APP_SECRET
 }
 
 // ==========================================
-// 📁 MFUMO WA KUHIFADHI MAFAILI (MEDIA)
+// 📁 2. MFUMO WA KUHIFADHI MAFAILI (MEDIA)
 // ==========================================
 const mediaDir = path.join(__dirname, 'public', 'media');
 if (!fs.existsSync(mediaDir)) {
     fs.mkdirSync(mediaDir, { recursive: true });
 }
-// Kuruhusu Frontend isome picha/video moja kwa moja kupitia link
 app.use('/media', express.static(mediaDir));
 
 app.use(helmet()); 
-app.use(cors()); 
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -112,17 +138,15 @@ const verifyCustomerToken = async (customerToken) => {
 };
 
 // ==========================================
-// 🚀 MEDIA DOWNLOADER ENGINE (META API)
+// 🚀 3. MEDIA DOWNLOADER ENGINE (META API)
 // ==========================================
 const downloadMetaMedia = async (mediaId, mimeType) => {
     try {
-        // 1. Pata URL halisi ya Meta kupitia Media ID
         const resUrl = await axios.get(`https://graph.facebook.com/v20.0/${mediaId}`, {
             headers: { 'Authorization': `Bearer ${META_ACCESS_TOKEN}` }
         });
         const mediaUrl = resUrl.data.url;
 
-        // 2. Pakua (Download) Binary Data ya hilo faili
         const response = await axios({
             method: 'GET',
             url: mediaUrl,
@@ -130,10 +154,9 @@ const downloadMetaMedia = async (mediaId, mimeType) => {
             responseType: 'stream'
         });
 
-        // 3. Tengeneza jina na Extension sahihi
         const extMatch = mimeType.match(/\/(.*?)(;|$)/);
         let ext = extMatch ? extMatch[1] : 'bin';
-        if (ext === 'ogg') ext = 'mp3'; // WhatsApp hutumia ogg kwa sauti, tunaibadili iwe mp3 kurahisisha Frontend
+        if (ext === 'ogg') ext = 'mp3'; 
         
         const fileName = `KEDESH_${Date.now()}_${Math.floor(Math.random()*10000)}.${ext}`;
         const filePath = path.join(mediaDir, fileName);
@@ -146,8 +169,7 @@ const downloadMetaMedia = async (mediaId, mimeType) => {
             writer.on('error', reject);
         });
 
-        // 4. Rudisha Public Link itakayosomwa na Mfumo wetu
-        return `https://api.kedeshlimited.com/media/${fileName}`;
+        return `https://apibulksms.kedeshlimited.com/media/${fileName}`; // Updated link
     } catch (error) {
         console.error(`❌ [MEDIA ERROR] Imeshindwa kupakua faili (ID: ${mediaId}):`, error.message);
         return null;
@@ -155,7 +177,7 @@ const downloadMetaMedia = async (mediaId, mimeType) => {
 };
 
 // ==========================================
-// 🗄️ DATABASE HELPERS
+// 🗄️ 4. DATABASE HELPERS
 // ==========================================
 const findOrCreateContact = async (businessId, phoneNumber, name) => {
     let contact = await prisma.contact.findFirst({ where: { businessId, phoneNumber } });
@@ -182,7 +204,7 @@ const saveMessageSafe = async (messageData) => {
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // ========================================================
-// ⚡ SOCKET.IO ENGINE
+// ⚡ 5. SOCKET.IO ENGINE
 // ========================================================
 io.use((socket, next) => {
     const token = socket.handshake.auth?.token || socket.handshake.query?.token;
@@ -201,7 +223,7 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// 📊 DASHBOARD STATS
+// 📊 6. DASHBOARD STATS & WALLET
 // ==========================================
 app.get('/api/dashboard/stats', verifyToken, async (req, res) => {
     try {
@@ -226,7 +248,7 @@ app.get('/api/wallet/balance', verifyToken, async (req, res) => {
 });
 
 // ==========================================
-// 🔐 AUTHENTICATION
+// 🔐 7. AUTHENTICATION & FACEBOOK LOGIN
 // ==========================================
 app.post('/api/auth/register', authLimiter, async (req, res) => {
     try {
@@ -346,7 +368,7 @@ app.post('/api/settings/update', verifyToken, async (req, res) => {
 });
 
 // ==========================================
-// 📡 7. AGGRESSIVE WEBHOOK (INAANIKA KILA KITU) 🔥
+// 📡 8. WEBHOOK YA META
 // ==========================================
 app.get('/webhook', (req, res) => {
     const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query;
@@ -359,16 +381,11 @@ app.get('/webhook', (req, res) => {
 });
 
 app.post('/webhook', async (req, res) => {
-    res.sendStatus(200); // Jibu Meta haraka sana!
+    res.sendStatus(200); 
     
-    console.log(`\n🔔 [WEBHOOK INAINGIA] Mzigo toka Meta Umefika!`);
-
     try {
         const body = req.body;
-        if (body?.object !== 'whatsapp_business_account') {
-            console.log(`⚠️ [WEBHOOK] Sio taarifa za WhatsApp. Imetupwa.`);
-            return;
-        }
+        if (body?.object !== 'whatsapp_business_account') return;
 
         for (const entry of body.entry || []) {
             for (const change of entry.changes || []) {
@@ -376,24 +393,17 @@ app.post('/webhook', async (req, res) => {
                 if (!value) continue;
 
                 const incomingPhoneId = value.metadata?.phone_number_id;
-                if (!incomingPhoneId) {
-                    continue;
-                }
+                if (!incomingPhoneId) continue;
 
-                console.log(`🔍 [WEBHOOK] Natafuta Biashara yenye Phone ID: ${incomingPhoneId}`);
                 const business = await prisma.business.findFirst({ where: { whatsappPhoneId: incomingPhoneId } });
-                
-                if (!business) {
-                    console.log(`❌ [WEBHOOK] Biashara haijapatikana kwa Phone ID hii. Imetupwa.`);
-                    continue;
-                }
+                if (!business) continue;
 
-                // A) KUKAMATA TIKI ZA BLUE / STATUS UPDATES
+                // TIKI ZA BLUE
                 if (value.statuses?.length > 0) {
                     for (const statusObj of value.statuses) {
                         const newStatus = statusObj.status.toUpperCase();
-                        
                         let existingMsg = await prisma.message.findFirst({ where: { metaMsgId: statusObj.id } });
+                        
                         if(!existingMsg) {
                             await sleep(1000); 
                             existingMsg = await prisma.message.findFirst({ where: { metaMsgId: statusObj.id } });
@@ -402,12 +412,11 @@ app.post('/webhook', async (req, res) => {
                         if(existingMsg) {
                             await prisma.message.update({ where: { id: existingMsg.id }, data: { status: newStatus } });
                             io.to(business.id).emit('messageStatusUpdate', { metaMsgId: statusObj.id, status: newStatus });
-                            console.log(`   ✅ [TIKI LIVE] -> ${newStatus}`);
                         }
                     }
                 }
 
-                // B) KUKAMATA MESEJI MTEJA AKIJIBU (INBOUND) NAKUSOMA MAFAILI YOTE
+                // INBOX MESEJI & MEDIA
                 if (value.messages?.length > 0) {
                     for (const message of value.messages) {
                         const phoneNumber = message.from;
@@ -416,17 +425,13 @@ app.post('/webhook', async (req, res) => {
                         
                         let msgBody = '';
 
-                        // LOGIC MPYA YA KUSOMA NA KUDOWNLOAD PICHA, VIDEO, AUDIO, NA DOCUMENTS
                         if (msgType === 'text') {
                             msgBody = message.text.body;
                         } else if (['image', 'video', 'audio', 'document', 'sticker'].includes(msgType)) {
                             const mediaObj = message[msgType];
                             if (mediaObj && mediaObj.id) {
-                                console.log(`   ⏳ [MEDIA ENGINE] Inapakua ${msgType.toUpperCase()} kutoka Meta (ID: ${mediaObj.id})...`);
                                 const fileUrl = await downloadMetaMedia(mediaObj.id, mediaObj.mime_type);
-                                
                                 if (fileUrl) {
-                                    // Tunaiwekea Tag Maalum ambayo Frontend itaitambua kirahisi
                                     msgBody = `[MEDIA:${msgType.toUpperCase()}]${fileUrl}`;
                                 } else {
                                     msgBody = `📎 [Faili: ${msgType}] - Imeshindwa kupakua faili.`;
@@ -435,8 +440,6 @@ app.post('/webhook', async (req, res) => {
                         } else {
                             msgBody = `📎 [Faili: Aina isiyojulikana (${msgType})]`;
                         }
-
-                        console.log(`   📥 [INBOX KUTOKA MTEJA] +${phoneNumber} -> Format: ${msgType}`);
 
                         const dbContact = await findOrCreateContact(business.id, phoneNumber, customerName);
                         const savedMsg = await saveMessageSafe({ 
@@ -456,7 +459,6 @@ app.post('/webhook', async (req, res) => {
                                 phoneNumber, 
                                 message: { id: savedMsg.id, content: savedMsg.content, direction: savedMsg.direction, status: savedMsg.status, createdAt: savedMsg.createdAt } 
                             });
-                            console.log(`   ✅ [INBOX] Ujumbe/Faili limeingia kwenye Live Chat ya ${business.businessName}!`);
                         }
                     }
                 }
@@ -468,7 +470,7 @@ app.post('/webhook', async (req, res) => {
 });
 
 // ==========================================
-// 📱 8. LIVE CHAT API
+// 📱 9. LIVE CHAT API
 // ==========================================
 app.get('/api/chat/contacts', verifyToken, async (req, res) => {
     try {
@@ -515,65 +517,109 @@ app.post('/api/chat/send', verifyToken, async (req, res) => {
     } catch (error) { res.status(500).json({ success: false, error: "Imeshindikana kutuma." }); }
 });
 
-// ==========================================
-// 🚀 9. BULK SMS ENGINE
-// ==========================================
+// =====================================================================
+// 🚀 10. PREMIUM BULK SMS ENGINE (BATCHING & BACKGROUND PROCESSING)
+// =====================================================================
 app.post('/api/send-bulk', verifyToken, async (req, res) => {
-    const startTime = Date.now();
     try {
         const { contacts, campaignName, templateName, templateLanguage, headerImageUrl } = req.body; 
-        if (!contacts?.length) return res.status(400).json({ success: false, error: "Namba hazipo." });
+        
+        if (!contacts || !Array.isArray(contacts) || contacts.length === 0) {
+            return res.status(400).json({ success: false, error: "Hakuna namba zilizowekwa kwenye kampeni!" });
+        }
 
         const business = await prisma.business.findUnique({ where: { id: req.user.businessId } });
-        if (!business.whatsappPhoneId) return res.status(403).json({ success: false, error: "Phone ID haijaunganishwa." });
+        if (!business.whatsappPhoneId) return res.status(403).json({ success: false, error: "Phone ID haijaunganishwa na Meta API." });
         
         const totalCost = contacts.length * BULK_SMS_COST;
-        if (business.walletBalance < totalCost) return res.status(402).json({ success: false, error: "Salio halitoshi." });
-
-        let metaSuccessCount = 0; let metaFailedCount = 0; const failedNumbers = [];
-
-        for (const phone of contacts) {
-            let metaMsgId = null; let metaSent = false;
-            try {
-                const payload = { name: templateName || "hello_world", language: { code: templateLanguage || "sw" } };
-                if (headerImageUrl?.trim()) payload.components = [{ type: "header", parameters: [{ type: "image", image: { link: headerImageUrl.trim() } }] }];
-                const metaRes = await sendWhatsAppMessageAsAdmin(business, phone, payload, 'template');
-                metaMsgId = metaRes.data.messages[0].id;
-                metaSuccessCount++; metaSent = true;
-            } catch (error) {
-                metaFailedCount++;
-                failedNumbers.push({ phone, reason: error.response?.data?.error?.message || error.message });
-                continue;
-            }
-
-            if (metaSent && metaMsgId) {
-                try {
-                    const dbContact = await findOrCreateContact(business.id, phone, phone);
-                    await saveMessageSafe({ metaMsgId, businessId: business.id, contactId: dbContact.id, direction: 'OUTBOUND', content: `📢 [${campaignName || 'Kampeni'}] - ${templateName}`, status: 'SENT', messageType: 'template' });
-                } catch(err) {}
-            }
-            await new Promise(resolve => setTimeout(resolve, 300)); 
+        if (business.walletBalance < totalCost) {
+            return res.status(402).json({ success: false, error: `Salio lako halitoshi. Unahitaji TZS ${totalCost}.` });
         }
 
-        const actualCost = metaSuccessCount * BULK_SMS_COST;
-        let newBalance = business.walletBalance;
-        if (actualCost > 0) {
-            const updated = await prisma.business.update({ where: { id: business.id }, data: { walletBalance: { decrement: actualCost } } });
-            newBalance = updated.walletBalance;
+        // MAJIBU YA HARAKA KWA DASHBOARD (Ili kuzuia Timeout error 500 kwa mteja)
+        res.status(200).json({ 
+            success: true, 
+            message: `Kampeni imepokelewa. Mfumo unachakata SMS ${contacts.length} kwa usalama...` 
+        });
+
+        // -------------------------------------------------------------
+        // 🔥 INJINI INAYOFANYA KAZI NYUMA YA PAZIA (BACKGROUND)
+        // -------------------------------------------------------------
+        (async () => {
+            console.log(`🚀 KAMPENI MPYA INAANZA: [${campaignName}] | WATEJA: ${contacts.length}`);
+            let metaSuccessCount = 0; 
+            let metaFailedCount = 0; 
+
+            // TAZAMA: Tunakata fungu la namba 50 kwa mkupuo (Ili kulinda RAM 4GB)
+            const CHUNK_SIZE = 50; 
+
+            for (let i = 0; i < contacts.length; i += CHUNK_SIZE) {
+                const batch = contacts.slice(i, i + CHUNK_SIZE);
+                console.log(`📦 Inachakata fungu la SMS: ${i + 1} mpaka ${i + batch.length}...`);
+
+                // Tunatuma SMS 50 kwa wakati mmoja kwa kutumia Promise.all
+                const promises = batch.map(async (phone) => {
+                    try {
+                        const payload = { name: templateName || "hello_world", language: { code: templateLanguage || "sw" } };
+                        if (headerImageUrl?.trim()) {
+                            payload.components = [{ type: "header", parameters: [{ type: "image", image: { link: headerImageUrl.trim() } }] }];
+                        }
+                        
+                        const metaRes = await sendWhatsAppMessageAsAdmin(business, phone, payload, 'template');
+                        const metaMsgId = metaRes.data.messages[0].id;
+                        metaSuccessCount++;
+
+                        // Hifadhi kwenye DB kwa usalama
+                        const dbContact = await findOrCreateContact(business.id, phone, phone);
+                        await saveMessageSafe({ 
+                            metaMsgId, businessId: business.id, contactId: dbContact.id, 
+                            direction: 'OUTBOUND', content: `📢 [${campaignName || 'Kampeni'}] - ${templateName}`, 
+                            status: 'SENT', messageType: 'template' 
+                        });
+                    } catch (error) {
+                        metaFailedCount++;
+                    }
+                });
+
+                // Subiri fungu la namba 50 limalize kabla ya kuchukua fungu lingine
+                await Promise.allSettled(promises);
+
+                // PUMZISHA MTAMBO KWA SEKUNDE 1 (Hii ndiyo inazuia Rate Limits Ban toka kwa Meta)
+                await sleep(1000); 
+            }
+
+            // Kata salio kulingana na SMS zilizofanikiwa kufika kwa Meta tu
+            const actualCost = metaSuccessCount * BULK_SMS_COST;
+            let newBalance = business.walletBalance;
+            if (actualCost > 0) {
+                const updated = await prisma.business.update({ where: { id: business.id }, data: { walletBalance: { decrement: actualCost } } });
+                newBalance = updated.walletBalance;
+            }
+
+            // Tuma majibu kwa Dashboard ya mteja ili takwimu zibadilike
+            io.to(business.id).emit('campaignComplete', { 
+                campaignName: campaignName || 'Kampeni', 
+                stats: { total: contacts.length, success: metaSuccessCount, failed: metaFailedCount }, 
+                newBalance 
+            });
+
+            console.log(`✅ KAMPENI [${campaignName}] IMEKAMILIKA! Zilizofika: ${metaSuccessCount}, Zilizofeli: ${metaFailedCount}`);
+
+        })(); // MWISHO WA BACKGROUND PROCESS
+
+    } catch (error) { 
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, error: "Hitilafu imetokea kwenye Server." }); 
         }
-
-        io.to(business.id).emit('campaignComplete', { campaignName: campaignName || 'Kampeni', stats: { total: contacts.length, success: metaSuccessCount, failed: metaFailedCount }, newBalance });
-
-        res.json({ success: true, message: `Kampeni imekamilika. ${metaSuccessCount}/${contacts.length} zimefika.`, stats: { total: contacts.length, success: metaSuccessCount, failed: metaFailedCount }, newBalance, failedNumbers });
-    } catch (error) { res.status(500).json({ success: false, error: "Hitilafu imetokea." }); }
+    }
 });
 
-app.get('/', (req, res) => { res.json({ status: "Online 🟢", version: "3.0.0 Premium (Media Support)" }); });
+app.get('/', (req, res) => { res.json({ status: "Online 🟢", version: "3.1.0 Premium (Batch Processing)" }); });
 app.use((err, req, res, next) => { res.status(500).json({ success: false, error: "Hitilafu isiyotarajiwa." }); });
 
 server.listen(PORT, () => {
     console.log(`\n=============================================================`);
-    console.log(` 🚀 KEDESH SAAS BACKEND v3.0.0 IMESIMAMA IMARA `);
-    console.log(` 🛡️ ENGINE: Media Downloader Inafanya Kazi Asilimia 100!`);
+    console.log(` 🚀 KEDESH SAAS BACKEND v3.1.0 IMESIMAMA IMARA `);
+    console.log(` 🛡️ ENGINE: CORS Security & Background Bulk SMS ACTIVE!`);
     console.log(`=============================================================\n`);
 });
