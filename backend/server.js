@@ -19,7 +19,6 @@ app.set('trust proxy', 1);
 // ==========================================
 // 🛡️ 1. CORS CONFIGURATION (MLINZI WA GETINI)
 // ==========================================
-// KANUNI KUU: CORS lazima ikae juu kabisa kabla ya Helmet au Routes zozote!
 const allowedOrigins = [
     'https://admin.kedeshlimited.com', 
     'https://bulksms.kedeshlimited.com',
@@ -42,10 +41,6 @@ app.use(cors({
     optionsSuccessStatus: 204
 }));
 
-// ==========================================
-// 🛡️ 2. HELMET & SECURITY HEADERS
-// ==========================================
-// Baada ya CORS kuruhusu mawasiliano, Helmet inaweka ulinzi wa ziada
 app.use(helmet({ crossOriginResourcePolicy: false })); 
 
 const server = http.createServer(app); 
@@ -62,9 +57,9 @@ const io = new Server(server, {
 });
 
 // ==========================================
-// ⚙️ 3. CORE SETTINGS & DATABASE
+// ⚙️ 2. CORE SETTINGS & DATABASE
 // ==========================================
-const PORT = 5300; // Imewekwa Hardcoded kuepuka Port Conflicts
+const PORT = 3000; 
 const prisma = new PrismaClient(); 
 
 const BULK_SMS_COST = 84;
@@ -80,7 +75,7 @@ if (!META_VERIFY_TOKEN || !META_ACCESS_TOKEN || !META_APP_ID || !META_APP_SECRET
 }
 
 // ==========================================
-// 📁 4. MFUMO WA KUHIFADHI MAFAILI (MEDIA)
+// 📁 3. MFUMO WA KUHIFADHI MAFAILI (MEDIA)
 // ==========================================
 const mediaDir = path.join(__dirname, 'public', 'media');
 if (!fs.existsSync(mediaDir)) {
@@ -92,7 +87,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // ==========================================
-// 🚦 5. RATE LIMITERS (KUZUIA SPAM)
+// 🚦 4. RATE LIMITERS (KUZUIA SPAM)
 // ==========================================
 const apiLimiter = rateLimit({ 
     windowMs: 1 * 60 * 1000, max: 500, 
@@ -102,7 +97,7 @@ const apiLimiter = rateLimit({
 app.use('/api/', apiLimiter); 
 
 const authLimiter = rateLimit({ 
-    windowMs: 15 * 60 * 1000, max: 20, 
+    windowMs: 15 * 60 * 1000, max: 50, 
     standardHeaders: true, legacyHeaders: false,
     message: { success: false, error: "Umejaribu kuingia mara nyingi mno. Subiri dakika 15." } 
 });
@@ -125,14 +120,18 @@ const verifyToken = (req, res, next) => {
 };
 
 // ==========================================
-// 🤖 6. META API HELPERS
+// 🤖 5. META API HELPERS (MABORESHO MAKUBWA HAPA)
 // ==========================================
 const sendWhatsAppMessageAsAdmin = async (business, phone, payload, type = 'text') => {
+    // 🔴 HAPA NDIPO TATIZO LILIPOKUWA LIMEJIFICHA:
+    // Tunatumia Token ya biashara yenyewe (Kama ipo) badala ya kutegemea ya kwenye .env pekee
+    const activeToken = business.metaAccessToken || META_ACCESS_TOKEN;
+    
     return await axios({
         method: 'POST',
         url: `https://graph.facebook.com/v20.0/${business.whatsappPhoneId}/messages`,
         headers: { 
-            'Authorization': `Bearer ${META_ACCESS_TOKEN}`,
+            'Authorization': `Bearer ${activeToken}`,
             'Content-Type': 'application/json' 
         },
         data: {
@@ -184,13 +183,12 @@ const downloadMetaMedia = async (mediaId, mimeType) => {
 
         return `https://apibulksms.kedeshlimited.com/media/${fileName}`; 
     } catch (error) {
-        console.error(`❌ [MEDIA ERROR] Imeshindwa kupakua faili (ID: ${mediaId}):`, error.message);
         return null;
     }
 };
 
 // ==========================================
-// 🗄️ 7. DATABASE HELPERS
+// 🗄️ 6. DATABASE HELPERS
 // ==========================================
 const findOrCreateContact = async (businessId, phoneNumber, name) => {
     let contact = await prisma.contact.findFirst({ where: { businessId, phoneNumber } });
@@ -209,7 +207,6 @@ const saveMessageSafe = async (messageData) => {
             create: { businessId, contactId, metaMsgId, direction, content, status, messageType: messageType || 'text' }
         });
     } catch (dbError) {
-        console.error(`⚠️ [DB SAVE WARNING] Imeshindwa kuhifadhi: ${dbError.message}`);
         return null;
     }
 };
@@ -217,7 +214,7 @@ const saveMessageSafe = async (messageData) => {
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // ========================================================
-// ⚡ 8. SOCKET.IO ENGINE
+// ⚡ 7. SOCKET.IO ENGINE
 // ========================================================
 io.use((socket, next) => {
     const token = socket.handshake.auth?.token || socket.handshake.query?.token;
@@ -236,7 +233,7 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// 📊 9. DASHBOARD STATS & WALLET
+// 📊 8. DASHBOARD STATS & WALLET
 // ==========================================
 app.get('/api/dashboard/stats', verifyToken, async (req, res) => {
     try {
@@ -261,7 +258,7 @@ app.get('/api/wallet/balance', verifyToken, async (req, res) => {
 });
 
 // ==========================================
-// 🔐 10. AUTHENTICATION & FACEBOOK LOGIN
+// 🔐 9. AUTHENTICATION & FACEBOOK LOGIN
 // ==========================================
 app.post('/api/auth/register', authLimiter, async (req, res) => {
     try {
@@ -381,7 +378,7 @@ app.post('/api/settings/update', verifyToken, async (req, res) => {
 });
 
 // ==========================================
-// 📡 11. WEBHOOK YA META
+// 📡 10. WEBHOOK YA META
 // ==========================================
 app.get('/webhook', (req, res) => {
     const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query;
@@ -481,7 +478,7 @@ app.post('/webhook', async (req, res) => {
 });
 
 // ==========================================
-// 📱 12. LIVE CHAT API
+// 📱 11. LIVE CHAT API (MABORESHO YA KUSOMA ERROR)
 // ==========================================
 app.get('/api/chat/contacts', verifyToken, async (req, res) => {
     try {
@@ -525,11 +522,18 @@ app.post('/api/chat/send', verifyToken, async (req, res) => {
         io.to(business.id).emit('walletUpdate', { newBalance: updatedBiz.walletBalance });
 
         res.json({ success: true, message: 'Imetumwa', newBalance: updatedBiz.walletBalance });
-    } catch (error) { res.status(500).json({ success: false, error: "Imeshindikana kutuma." }); }
+    } catch (error) { 
+        // 🔴 HAPA TUNAMFUMANIA META! Tunachapisha kosa lile hasa alilolikataa
+        const metaError = error.response ? error.response.data : error.message;
+        console.error("\n❌❌❌ KOSA KUTOKA META API (LIVE CHAT) ❌❌❌");
+        console.error(JSON.stringify(metaError, null, 2));
+        console.error("=========================================\n");
+        res.status(500).json({ success: false, error: "Meta wamekataa ujumbe. Tazama logi za Server.", meta_details: metaError }); 
+    }
 });
 
 // =====================================================================
-// 🚀 13. PREMIUM BULK SMS ENGINE (BATCHING & BACKGROUND PROCESSING)
+// 🚀 12. BULK SMS ENGINE
 // =====================================================================
 app.post('/api/send-bulk', verifyToken, async (req, res) => {
     try {
@@ -561,7 +565,6 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
 
             for (let i = 0; i < contacts.length; i += CHUNK_SIZE) {
                 const batch = contacts.slice(i, i + CHUNK_SIZE);
-                console.log(`📦 Inachakata fungu la SMS: ${i + 1} mpaka ${i + batch.length}...`);
 
                 const promises = batch.map(async (phone) => {
                     try {
@@ -582,6 +585,9 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
                         });
                     } catch (error) {
                         metaFailedCount++;
+                        // 🔴 KUDHIBITI MAKOSA YA KAMPENI
+                        const metaError = error.response ? error.response.data : error.message;
+                        console.error(`❌ Meseji kwenda ${phone} imefeli:`, JSON.stringify(metaError));
                     }
                 });
 
@@ -602,8 +608,6 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
                 newBalance 
             });
 
-            console.log(`✅ KAMPENI [${campaignName}] IMEKAMILIKA! Zilizofika: ${metaSuccessCount}, Zilizofeli: ${metaFailedCount}`);
-
         })(); 
 
     } catch (error) { 
@@ -613,12 +617,11 @@ app.post('/api/send-bulk', verifyToken, async (req, res) => {
     }
 });
 
-app.get('/', (req, res) => { res.json({ status: "Online 🟢", version: "3.7.0 Enterprise (Ultimate CORS Fix)" }); });
+app.get('/', (req, res) => { res.json({ status: "Online 🟢", version: "4.1.0 (X-Ray & Multi-Tenant Meta Tokens)" }); });
 
 // =====================================================================
-// 🛡️ 14. ENTERPRISE ERROR SHIELDS & GRACEFUL SHUTDOWN
+// 🛡️ 13. ENTERPRISE ERROR SHIELDS & GRACEFUL SHUTDOWN
 // =====================================================================
-
 app.use((req, res, next) => {
     res.status(404).json({ success: false, error: "Njia hii haipo kwenye Mfumo." });
 });
@@ -638,7 +641,7 @@ process.on('uncaughtException', (error) => {
 
 server.on('error', (e) => {
     if (e.code === 'EADDRINUSE') {
-        console.error(`❌ PORT ${PORT} INATUMIKA NA MFUMO MWINGINE! Badilisha kwenye .env (Mfn: PORT=3000)`);
+        console.error(`❌ PORT ${PORT} INATUMIKA NA MFUMO MWINGINE! Hakikisha Port ipo wazi.`);
         process.exit(1);
     }
 });
@@ -646,9 +649,8 @@ server.on('error', (e) => {
 const shutdown = async () => {
     console.log('\n🛑 Inazima mtambo kwa usalama (Graceful Shutdown)...');
     server.close(async () => {
-        console.log('🔌 Server imekatwa mawasiliano ya nje.');
         await prisma.$disconnect();
-        console.log('💾 Database imefungwa salama. Hakuna Mzimu ulioachwa!');
+        console.log('💾 Database imefungwa salama.');
         process.exit(0);
     });
 };
@@ -657,12 +659,11 @@ process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);  
 
 // =====================================================================
-// 🚀 15. KUWASHA MTAMBO
+// 🚀 14. KUWASHA MTAMBO
 // =====================================================================
 server.listen(PORT, () => {
     console.log(`\n=============================================================`);
-    console.log(` 🚀 KEDESH SAAS BACKEND v3.7.0 (ENTERPRISE) IMESIMAMA IMARA `);
-    console.log(` 🛡️ ENGINE: Ultimate CORS Mlinzi Wa Getini Yupo Imara!`);
-    console.log(` 🌐 PORT: Inasikiliza kwenye namba ${PORT}`);
+    console.log(` 🚀 KEDESH SAAS BACKEND v4.1.0 (PORT 3000) IMESIMAMA IMARA `);
+    console.log(` 🌐 PORT: Inasikiliza kwenye namba ${PORT} (Sawa na NGINX inavyotaka)`);
     console.log(`=============================================================\n`);
 });
