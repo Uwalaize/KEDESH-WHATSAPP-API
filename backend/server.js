@@ -56,7 +56,7 @@ const io = new Server(server, {
     pingInterval: 25000
 });
 
-const PORT = process.env.PORT || 5000; 
+const PORT = process.env.PORT || 5300; 
 const prisma = new PrismaClient(); 
 
 const BULK_SMS_COST = 84;
