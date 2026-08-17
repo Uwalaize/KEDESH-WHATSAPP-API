@@ -238,7 +238,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import Dashboard from './components/Dashboard.vue';
 
@@ -286,19 +286,11 @@ onMounted(() => {
 const openPrivacy = () => {
   showPrivacy.value = true;
   window.history.pushState({}, '', '?privacy=true');
-  // Scroll to top when opening privacy on mobile
-  if (window.innerWidth <= 992) {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
 };
 
 const closePrivacy = () => {
   showPrivacy.value = false;
   window.history.pushState({}, '', window.location.pathname);
-  // Scroll to top when closing privacy
-  if (window.innerWidth <= 992) {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
 };
 
 const loginWithFacebook = () => {
@@ -391,26 +383,8 @@ const logout = () => {
 }
 
 /* ======== REDIRECT SCREEN ======== */
-.redirect-screen {
-  display: flex;
-  height: 100vh;
-  width: 100%;
-  background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%);
-  justify-content: center;
-  align-items: center;
-  color: white;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-.redirect-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  max-width: 450px;
-  padding: 20px;
-  margin: auto;
-}
+.redirect-screen { display: flex; height: 100vh; width: 100%; background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); justify-content: center; align-items: center; color: white; }
+.redirect-content { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 450px; padding: 20px; }
 .success-animation { margin-bottom: 24px; }
 .checkmark { width: 80px; height: 80px; border-radius: 50%; display: block; stroke-width: 3; stroke: #10b981; stroke-miterlimit: 10; animation: scaleCheck 0.5s ease-in-out 0.3s both; }
 .checkmark-circle { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 3; stroke: #10b981; fill: none; animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards; }
@@ -425,27 +399,24 @@ const logout = () => {
 .loader-progress { height: 100%; background: linear-gradient(90deg, #4f46e5, #10b981, #4f46e5); background-size: 200% 100%; width: 0%; border-radius: 10px; animation: loadBar 2.5s ease-in-out forwards, shimmer 2s infinite; }
 @keyframes loadBar { 0% { width: 0%; } 100% { width: 100%; } }
 @keyframes shimmer { 0% { background-position: 0% 0%; } 100% { background-position: 200% 0%; } }
-.secure-badge-redirect { display: flex; align-items: center; gap: 10px; color: #10b981; font-size: 0.9rem; font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 12px 24px; border-radius: 30px; border: 1px solid rgba(16, 185, 129, 0.2); flex-wrap: wrap; justify-content: center; }
+.secure-badge-redirect { display: flex; align-items: center; gap: 10px; color: #10b981; font-size: 0.9rem; font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 12px 24px; border-radius: 30px; border: 1px solid rgba(16, 185, 129, 0.2); }
 
 .page-fade-enter-active, .page-fade-leave-active { transition: opacity 0.5s ease, transform 0.5s ease; }
 .page-fade-enter-from { opacity: 0; transform: scale(0.98); }
 .page-fade-leave-to { opacity: 0; transform: scale(1.02); }
 
 /* ======== MAIN AUTH LAYOUT ======== */
-/* 🔥 MABADILIKO MAKUU: Added overflow-y auto and overscroll-behavior */
+/* MABADILIKO MAKUBWA: Badala ya 'min-height: 100vh', sasa inaruhusu scrolling asili kwenye mobile */
 .auth-container {
   display: flex;
   min-height: 100vh;
-  height: 100vh;
   width: 100%;
   background: #f0f4f8;
   overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
 }
 
 /* ======== BRAND SIDE ======== */
+/* MABADILIKO: Ruhusu content kujitanua vyema */
 .brand-side {
   flex: 1;
   background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%);
@@ -456,7 +427,6 @@ const logout = () => {
   flex-direction: column;
   justify-content: center;
   overflow: hidden;
-  min-height: 100%;
 }
 .brand-bg-pattern { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: radial-gradient(circle at 20% 80%, rgba(79, 70, 229, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.06) 0%, transparent 50%); z-index: 1; }
 .glow-orb { position: absolute; border-radius: 50%; filter: blur(120px); z-index: 1; opacity: 0.4; animation: float 12s ease-in-out infinite alternate; }
@@ -484,16 +454,7 @@ const logout = () => {
 .dot { margin: 0 10px; opacity: 0.5; }
 
 /* ======== FORM SIDE ======== */
-.form-side {
-  flex: 1.3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  padding: 2rem;
-  position: relative;
-  min-height: fit-content;
-}
+.form-side { flex: 1.3; display: flex; align-items: center; justify-content: center; background: #ffffff; padding: 2rem; position: relative; }
 .form-wrapper { width: 100%; max-width: 460px; transition: max-width 0.4s ease; margin: 0 auto; }
 .wide-wrapper { max-width: 750px; }
 
@@ -529,24 +490,13 @@ const logout = () => {
 .warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
 
 /* ======== PRIVACY CARD ======== */
-.privacy-card {
-  padding: 2.5rem 3rem !important;
-  display: flex;
-  flex-direction: column;
-  max-height: 85vh;
-}
+.privacy-card { padding: 2.5rem 3rem !important; display: flex; flex-direction: column; max-height: 85vh; }
 .privacy-header { border-bottom: 1px solid #e2e8f0; padding-bottom: 1.5rem; margin-bottom: 1.5rem; text-align: center; flex-shrink: 0; }
 .privacy-header h2 { font-size: 1.6rem; color: #0f172a; font-weight: 800; margin: 10px 0 5px 0; }
 .privacy-meta { display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 0.85rem; color: #64748b; flex-wrap: wrap; }
 .badge { background: #e0e7ff; color: #4f46e5; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.8rem; }
 .dot-separator { color: #cbd5e1; }
-.privacy-content {
-  overflow-y: auto;
-  padding-right: 15px;
-  text-align: left;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-}
+.privacy-content { overflow-y: auto; padding-right: 15px; text-align: left; }
 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px;}
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -578,7 +528,6 @@ const logout = () => {
 .mobile-privacy-link a:hover { text-decoration: underline; }
 
 /* ======== 100% RESPONSIVENESS MEDIA QUERIES ======== */
-/* 🔥 MABADILIKO MAKUU: Updated media queries for better mobile scrolling */
 @media (max-width: 1200px) {
   .hero-title { font-size: 2.8rem; }
   .brand-side { padding: 3rem; }
@@ -586,25 +535,10 @@ const logout = () => {
 }
 
 @media (max-width: 992px) {
-  /* 🔥 MABADILIKO: Container inaruhusu scrolling asili */
-  .auth-container {
-    flex-direction: column;
-    height: 100vh;
-    min-height: 100vh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
+  /* MABADILIKO: Inaachia container kuwa auto ili scroll ifanye kazi mpaka mwisho */
+  .auth-container { flex-direction: column; height: auto; min-height: 100vh; overflow-y: visible; }
 
-  .brand-side {
-    padding: 3rem 1.5rem 2rem;
-    flex: none;
-    text-align: center;
-    align-items: center;
-    min-height: auto;
-    max-height: none;
-  }
+  .brand-side { padding: 3rem 1.5rem 2rem; flex: none; text-align: center; align-items: center; min-height: auto; }
   .brand-content { min-height: auto; justify-content: center; gap: 1.5rem; }
   .brand-top .logo { margin: 0 auto 1rem; }
   .glow-orb { filter: blur(80px); }
@@ -615,43 +549,16 @@ const logout = () => {
   .subtitle { max-width: 100%; font-size: 1.05rem; margin-bottom: 1.5rem; }
   .stats-mini { justify-content: center; }
 
-  .form-side {
-    padding: 2rem 1rem 4rem;
-    align-items: flex-start;
-    min-height: auto;
-    flex: 1;
-    overflow-y: visible;
-  }
-  .glass-card { max-width: 500px; margin: 0 auto 2rem; width: 100%; padding: 2.5rem 2rem; }
+  .form-side { padding: 2rem 1rem 4rem; align-items: flex-start; min-height: auto; }
+  .glass-card { max-width: 500px; margin: 0 auto; width: 100%; padding: 2.5rem 2rem; }
   .premium-login-card { padding: 3rem 2rem; }
-
-  /* 🔥 MABADILIKO: Privacy card inaweza kuwa ndefu zaidi kwenye mobile */
-  .privacy-card {
-    padding: 1.5rem !important;
-    max-height: none;
-    min-height: auto;
-    margin-bottom: 2rem;
-  }
-  .privacy-content {
-    max-height: 60vh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
+  .privacy-card { padding: 1.5rem !important; max-height: none; }
   .wide-wrapper { max-width: 100%; }
 }
 
 @media (max-width: 768px) {
   .hero-title { font-size: 2rem; }
   .stats-mini { gap: 15px; }
-
-  /* 🔥 MABADILIKO: Kuhakikisha scroll inafanya kazi vizuri */
-  .auth-container {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .form-side {
-    padding-bottom: 3rem;
-  }
 }
 
 @media (max-width: 576px) {
@@ -661,50 +568,15 @@ const logout = () => {
   .stat-item { width: 45%; }
   .stat-divider-vertical { display: none; }
 
-  /* 🔥 MABADILIKO: Padding inaachiliwa zaidi chini ili card isijikate kwenye simu */
-  .form-side {
-    padding: 1.5rem 1rem 5rem;
-    min-height: fit-content;
-  }
-  .glass-card {
-    padding: 2rem 1.2rem;
-    border-radius: 16px;
-    margin-bottom: 2rem;
-    min-height: auto;
-  }
+  /* Padding inaachiliwa zaidi chini ili card isijikate kwenye simu */
+  .form-side { padding: 1.5rem 1rem 5rem; }
+  .glass-card { padding: 2rem 1.2rem; border-radius: 16px; margin-bottom: 2rem; }
   .premium-login-card { padding: 2.5rem 1.2rem; }
 
   .form-header h2 { font-size: 1.6rem; }
   .btn-facebook-massive { font-size: 1.05rem; padding: 16px; border-radius: 12px; }
   .fb-content-large svg { width: 24px; height: 24px; }
   .fb-hint-large { font-size: 0.85rem; padding-bottom: 10px; }
-
-  /* 🔥 MABADILIKO: Privacy card inaboreshwa kwa simu ndogo */
-  .privacy-card {
-    padding: 1.2rem !important;
-    margin-bottom: 1.5rem;
-  }
-  .privacy-content {
-    max-height: 50vh;
-  }
-  .privacy-header h2 { font-size: 1.3rem; }
-  .privacy-meta { font-size: 0.75rem; gap: 5px; }
-  .hide-mobile { display: none; }
-
-  /* Kuhakikisha scroll bar inaonekana vizuri */
-  .redirect-content {
-    padding: 15px;
-  }
-  .redirect-title { font-size: 1.8rem; }
-  .redirect-text { font-size: 1rem; }
-}
-
-/* 🔥 MABADILIKO MAKUU: Extra small screens */
-@media (max-width: 360px) {
-  .hero-title { font-size: 1.5rem; }
-  .premium-badge { font-size: 0.75rem; padding: 6px 12px; }
-  .btn-facebook-massive { font-size: 0.95rem; padding: 14px; }
-  .fb-content-large svg { width: 20px; height: 20px; }
-  .glass-card { padding: 1.5rem 1rem; }
+  .privacy-card { padding: 1.2rem !important; }
 }
 </style>
