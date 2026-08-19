@@ -61,7 +61,7 @@
       <div class="sidebar-inner">
         <div class="brand">
           <div class="brand-logo-wrapper">
-            <img src="/logo/image.png" alt="Kedesh Limited" class="brand-logo" />
+            <img src="/image.png" alt="Kedesh Limited" class="brand-logo" />
           </div>
           <div class="brand-text">
             <h2>{{ userData?.businessName || 'KEDESH LIMITED' }}</h2>
@@ -480,13 +480,12 @@
                 </div>
               </div>
 
-              <!-- VIPENGELE VYA KUCHUJA SMS ZILIZOSOMWA NA HAZIJASOMWA -->
               <div class="chat-filters">
                 <button
                   :class="['filter-btn', { active: chatFilter === 'all' }]"
                   @click="chatFilter = 'all'"
                 >
-                  Zote (All)
+                  Zote
                 </button>
                 <button
                   :class="['filter-btn', { active: chatFilter === 'unread' }]"
@@ -499,8 +498,8 @@
               <div class="chat-list custom-scrollbar">
                 <div v-if="filteredContacts.length === 0" class="empty-chat-list">
                   <span class="empty-icon">📭</span>
-                  <h4>Hakuna Meseji Bado</h4>
-                  <p>Wateja watakapotuma ujumbe, wataonekana hapa</p>
+                  <h4>Hakuna Meseji</h4>
+                  <p>Hamna mawasiliano kwa sasa</p>
                 </div>
 
                 <div v-for="contact in filteredContacts" :key="contact.id"
@@ -515,7 +514,7 @@
                       <h4 class="contact-name" :class="{ 'font-bold': contact.unread > 0 }">
                         {{ contact.name }}
                       </h4>
-                      <span class="contact-time" :class="{ 'text-green': contact.unread > 0 }">
+                      <span class="contact-time" :class="{ 'text-blue-500 font-bold': contact.unread > 0 }">
                         {{ contact.time }}
                       </span>
                     </div>
@@ -552,7 +551,8 @@
                 </div>
               </div>
 
-              <div class="chat-messages-area custom-scrollbar" ref="chatScroll">
+              <!-- HAPA NDIO BACKGROUND MPYA NA NZURI ILIPO WEKWA -->
+              <div class="chat-messages-area custom-scrollbar chat-bg-pattern" ref="chatScroll">
                 <div class="date-divider"><span>{{ currentDate }}</span></div>
 
                 <div class="encryption-notice">
@@ -562,7 +562,6 @@
                 <div v-for="msg in chatMessages" :key="msg.id" class="message-row" :class="msg.direction === 'OUTBOUND' ? 'msg-out' : 'msg-in'">
                   <div class="message-bubble" :class="msg.direction === 'OUTBOUND' ? 'bubble-out' : 'bubble-in'">
 
-                    <!-- KODI MPYA: RENDER CONTENT INAYOTAMBUA MEDIA YOTE -->
                     <div class="msg-content-wrapper" v-html="renderMessageContent(msg.text)"></div>
 
                     <div class="msg-meta">
@@ -603,7 +602,7 @@
             </div>
 
             <!-- Empty Chat View -->
-            <div class="chat-main empty-state" v-else>
+            <div class="chat-main empty-state chat-bg-pattern" v-else>
               <div class="empty-chat-content">
                 <div class="empty-chat-icon">💬</div>
                 <h2>KEDESH Live Chat</h2>
@@ -627,7 +626,6 @@
                   <p>Taarifa zako za WhatsApp API zimehifadhiwa kwa usalama</p>
                 </div>
 
-                <!-- IKIWA SETUP IMekamilika -->
                 <div v-if="userData?.whatsappPhoneId && userData?.wabaId" class="api-details">
                   <div class="api-status-badge connected">
                     <span class="pulse-dot green"></span>
@@ -667,7 +665,6 @@
                   </div>
                 </div>
 
-                <!-- IKIWA SETUP HAIJAKAMILIKA -->
                 <div v-else class="api-details">
                   <div class="api-status-badge warning">
                     <span class="pulse-dot orange"></span>
@@ -754,33 +751,27 @@ const formatMoney = (amount) => {
 const renderMessageContent = (text) => {
   if (!text) return '';
 
-  // Angalia Picha
   if (text.startsWith('[MEDIA:IMAGE]')) {
     const url = text.replace('[MEDIA:IMAGE]', '');
     return `<div class="media-container"><img src="${url}" class="chat-image" alt="Picha toka kwa mteja" loading="lazy" /></div>`;
   }
-  // Angalia Video
   else if (text.startsWith('[MEDIA:VIDEO]')) {
     const url = text.replace('[MEDIA:VIDEO]', '');
     return `<div class="media-container"><video src="${url}" controls class="chat-video" preload="metadata"></video></div>`;
   }
-  // Angalia Audio/Voice Notes
   else if (text.startsWith('[MEDIA:AUDIO]')) {
     const url = text.replace('[MEDIA:AUDIO]', '');
     return `<div class="media-container audio-container"><audio src="${url}" controls class="chat-audio"></audio></div>`;
   }
-  // Angalia Documents
   else if (text.startsWith('[MEDIA:DOCUMENT]')) {
     const url = text.replace('[MEDIA:DOCUMENT]', '');
     return `<a href="${url}" target="_blank" class="document-link"><span class="doc-icon">📄</span> Pakua Faili (Document)</a>`;
   }
 
-  // Kama ni meseji ya kawaida au template, iache kama ilivyo lakini ruhusu links zibonyezwe
   const urlRegex = /(https?:\/\/[^\s]+)/g;
-  return `<p class="msg-text">${text.replace(urlRegex, '<a href="$1" target="_blank" style="color: #0284c7; text-decoration: underline;">$1</a>')}</p>`;
+  return `<p class="msg-text">${text.replace(urlRegex, '<a href="$1" target="_blank" style="color: #3b82f6; text-decoration: underline;">$1</a>')}</p>`;
 };
 
-// Kusafisha preview kwenye sidebar isionyeshe link ndefu
 const cleanMessagePreview = (text) => {
   if (!text) return '...';
   if (text.startsWith('[MEDIA:IMAGE]')) return '📷 Picha';
@@ -791,7 +782,7 @@ const cleanMessagePreview = (text) => {
 };
 
 // ==========================================
-// 🚀 SOCKET.IO LOGIC
+// 🚀 SOCKET.IO LOGIC (WEBSOCKET FIX)
 // ==========================================
 let socket = null;
 const isSocketConnected = ref(false);
@@ -801,26 +792,24 @@ const initSocket = () => {
     const token = localStorage.getItem('msamba_token');
     if(!token) return;
 
-    // Initialize audio lazily
     try {
         notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
     } catch(e) {
         console.log('Audio not supported');
     }
 
+    // 🔴 SULUHISHO LA WEBSOCKET ERROR: Imeanza na 'polling' kuondoa makosa ya Nginx/Cloudflare
     socket = io("https://apibulksms.kedeshlimited.com", {
         auth: { token: token },
-        transports: ['websocket', 'polling']
+        transports: ['polling', 'websocket']
     });
 
     socket.on("connect", () => {
         isSocketConnected.value = true;
-        console.log('Socket connected');
     });
 
     socket.on("disconnect", () => {
         isSocketConnected.value = false;
-        console.log('Socket disconnected');
     });
 
     socket.on("newIncomingMessage", (data) => {
@@ -878,10 +867,22 @@ const initSocket = () => {
         }
     });
 
+    // 🔴 SULUHISHO: KUPATA MAJIBU YA BULK SMS BILA KUGANDA
     socket.on("campaignComplete", (data) => {
+        // Hii event inasikiliza taarifa toka Backend kwamba mtambo umemaliza kutuma.
         if (data.newBalance !== undefined) {
             userData.value.walletBalance = data.newBalance;
         }
+
+        // Zima kiashiria cha 'loading' na uonyeshe ripoti kamili
+        isSending.value = false;
+        sendReport.value = {
+             success: true,
+             message: "Kazi Imemalizika kikamilifu. Hii ndio ripoti yako halisi:",
+             successCount: data.stats?.success || 0,
+             failedCount: data.stats?.failed || 0
+        };
+
         fetchDashboardStats(false);
     });
 };
@@ -1011,6 +1012,9 @@ const processExcel = (file) => {
   reader.readAsArrayBuffer(file);
 };
 
+// 🔴 SULUHISHO LA BUG YA KUGANDA:
+// Tunatuma data pekee halafu tunaingia kwenye "Loading State" (isSending = true).
+// Kisha tutasubiri Socket io.emit("campaignComplete") kumaliza Loading.
 const sendBulkSMS = async () => {
    if (parsedContacts.value.length === 0 || !campaignName.value || !templateNameInput.value) return;
 
@@ -1023,7 +1027,6 @@ const sendBulkSMS = async () => {
    isSending.value = true;
    sendReport.value = null;
 
-
    try {
       const token = localStorage.getItem('msamba_token');
       const res = await axios.post('https://apibulksms.kedeshlimited.com/api/send-bulk', {
@@ -1034,25 +1037,18 @@ const sendBulkSMS = async () => {
           headerImageUrl: headerImageUrl.value.trim()
       }, { headers: { Authorization: `Bearer ${token}` } });
 
-      if (res.data.success) {
-         sendReport.value = {
-             success: true,
-             message: res.data.message,
-             successCount: res.data.stats?.success || 0,
-             failedCount: res.data.stats?.failed || 0
-         };
-         if(res.data.newBalance !== undefined) {
-             userData.value.walletBalance = res.data.newBalance;
-         }
-         fetchDashboardStats(false);
+      // Hapa tunapata jibu la haraka kutoka Backend kuwa Kampeni imeanza
+      if (!res.data.success) {
+         isSending.value = false;
+         alert("Imeshindwa kuanzisha kampeni. Jaribu tena.");
       }
+      // IKIWA SUCCESS: Tunabaki kwenye `isSending = true` mpaka socket idake matokeo ya Meta
    } catch (error) {
+      isSending.value = false;
       sendReport.value = {
           success: false,
           message: error.response?.data?.error || "Kosa la kimtandao limetokea."
       };
-   } finally {
-       isSending.value = false;
    }
 };
 
@@ -1064,7 +1060,7 @@ const chatContacts = ref([]);
 const chatMessages = ref([]);
 const isSendingChat = ref(false);
 const searchQuery = ref('');
-const chatFilter = ref('all'); // Nimeongeza state ya filter hapa
+const chatFilter = ref('all');
 let statsPolling = null;
 
 const currentActiveContact = computed(() => {
@@ -1081,16 +1077,11 @@ const totalUnread = computed(() => {
     return chatContacts.value.reduce((sum, contact) => sum + (contact.unread || 0), 0);
 });
 
-// Logic iliyoboreshwa ya Kuchuja (Search & Unread Filter)
 const filteredContacts = computed(() => {
   let result = chatContacts.value;
-
-  // Chuja kwa SMS zisizosomwa pekee ikiwa kitufe kimebonyezwa
   if (chatFilter.value === 'unread') {
     result = result.filter(c => c.unread > 0);
   }
-
-  // Chuja kwa majina au namba ikiwa mtu anatafuta
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
     result = result.filter(c =>
@@ -1098,7 +1089,6 @@ const filteredContacts = computed(() => {
       c.phone.includes(query)
     );
   }
-
   return result;
 });
 
@@ -1235,7 +1225,7 @@ watch(currentView, (newView) => {
 onMounted(() => {
     initSocket();
     startStatsPolling();
-    fetchContacts();
+    if (currentView.value === 'chat') fetchContacts();
 });
 
 onUnmounted(() => {
@@ -2490,7 +2480,9 @@ onUnmounted(() => {
 .text-blue { color: #3b82f6; }
 .text-green { color: #10b981; }
 
-/* ======== LIVE CHAT (NA VICHUJIO VIPYA) ======== */
+/* ==========================================
+   🔥 UI/UX MPYA YA LIVE CHAT
+   ========================================== */
 .chat-layout {
   display: flex;
   background: white;
@@ -2498,7 +2490,7 @@ onUnmounted(() => {
   overflow: hidden;
   border: 1px solid #e2e8f0;
   height: calc(100vh - 160px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08); /* Kivuli kuzunguka component nzima */
 }
 
 .chat-sidebar {
@@ -2508,6 +2500,7 @@ onUnmounted(() => {
   flex-direction: column;
   background: white;
   flex-shrink: 0;
+  z-index: 10;
 }
 
 .chat-sidebar-header {
@@ -2521,7 +2514,7 @@ onUnmounted(() => {
 .chat-sidebar-header h3 {
   color: #0f172a;
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .refresh-btn {
@@ -2530,7 +2523,7 @@ onUnmounted(() => {
   font-size: 1.2rem;
   cursor: pointer;
   transition: 0.3s;
-  padding: 4px 8px;
+  padding: 6px 10px;
   border-radius: 8px;
 }
 
@@ -2539,7 +2532,7 @@ onUnmounted(() => {
 }
 
 .chat-search {
-  padding: 12px 16px;
+  padding: 16px;
   border-bottom: 1px solid #f1f5f9;
 }
 
@@ -2547,13 +2540,22 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   background: #f1f5f9;
-  border-radius: 10px;
-  padding: 10px 16px;
+  border-radius: 12px;
+  padding: 12px 16px;
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.search-wrap:focus-within {
+  border-color: #4f46e5;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
 .search-icon {
-  font-size: 0.9rem;
+  font-size: 1rem;
   margin-right: 10px;
+  color: #94a3b8;
 }
 
 .search-wrap input {
@@ -2561,23 +2563,26 @@ onUnmounted(() => {
   border: none;
   background: transparent;
   outline: none;
-  font-size: 0.9rem;
-  color: #334155;
+  font-size: 0.95rem;
+  color: #0f172a;
+  font-weight: 500;
 }
 
-/* CHAT FILTERS */
+.search-wrap input::placeholder {
+  color: #94a3b8;
+}
+
 .chat-filters {
   display: flex;
-  padding: 8px 16px 12px 16px;
-  gap: 8px;
-  background: white;
+  padding: 0 16px 12px 16px;
+  gap: 10px;
   border-bottom: 1px solid #e2e8f0;
 }
 
 .filter-btn {
   flex: 1;
   padding: 8px 12px;
-  border-radius: 20px;
+  border-radius: 12px;
   border: none;
   background: #f1f5f9;
   color: #64748b;
@@ -2593,6 +2598,7 @@ onUnmounted(() => {
 
 .filter-btn:hover {
   background: #e2e8f0;
+  color: #0f172a;
 }
 
 .filter-btn.active {
@@ -2605,7 +2611,7 @@ onUnmounted(() => {
   background: #ef4444;
   color: white;
   padding: 2px 6px;
-  border-radius: 10px;
+  border-radius: 8px;
   font-size: 0.7rem;
   font-weight: 800;
 }
@@ -2625,28 +2631,29 @@ onUnmounted(() => {
 }
 
 .empty-icon {
-  font-size: 3rem;
+  font-size: 3.5rem;
   margin-bottom: 16px;
 }
 
 .empty-chat-list h4 {
   color: #0f172a;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 8px;
+  font-size: 1.1rem;
 }
 
 .empty-chat-list p {
   color: #64748b;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .contact-item {
   display: flex;
   align-items: center;
-  padding: 14px 16px;
+  padding: 16px;
   cursor: pointer;
-  border-bottom: 1px solid #f1f5f9;
-  transition: 0.2s;
+  border-bottom: 1px solid #f8fafc;
+  transition: all 0.2s ease;
   gap: 14px;
 }
 
@@ -2660,22 +2667,23 @@ onUnmounted(() => {
 }
 
 .contact-avatar {
-  width: 48px;
-  height: 48px;
+  width: 50px;
+  height: 50px;
   background: #e2e8f0;
-  color: #64748b;
+  color: #475569;
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   font-size: 1.2rem;
-  font-weight: 700;
+  font-weight: 800;
   flex-shrink: 0;
 }
 
 .contact-avatar.has-unread {
   background: linear-gradient(135deg, #4f46e5, #3730a3);
   color: white;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
 }
 
 .contact-info {
@@ -2691,22 +2699,22 @@ onUnmounted(() => {
 }
 
 .contact-name {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: #0f172a;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .font-bold {
-  font-weight: 700;
+  font-weight: 800 !important;
 }
 
 .contact-time {
   font-size: 0.75rem;
   color: #64748b;
-  font-weight: 500;
+  font-weight: 600;
   flex-shrink: 0;
   margin-left: 8px;
 }
@@ -2718,12 +2726,13 @@ onUnmounted(() => {
 }
 
 .contact-msg {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: #64748b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+  font-weight: 500;
 }
 
 .text-dark {
@@ -2734,25 +2743,21 @@ onUnmounted(() => {
   margin-right: 4px;
 }
 
-.tick-gray {
-  color: #8696a0;
-}
-
-.tick-blue {
-  color: #53bdeb;
-}
+.tick-gray { color: #94a3b8; }
+.tick-blue { color: #3b82f6; }
 
 .unread-badge {
   background: #10b981;
   color: white;
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 10px;
-  min-width: 20px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 12px;
+  min-width: 22px;
   text-align: center;
   flex-shrink: 0;
   margin-left: 8px;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
 }
 
 /* Chat Main */
@@ -2760,149 +2765,144 @@ onUnmounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #efeae2;
+  /* 🔴 FIXED: Background nzuri ya kisasa inayofanya meseji zionekane vizuri */
+  background-color: #f8fafc;
+  position: relative;
+}
+
+.chat-bg-pattern {
+  background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+  background-size: 20px 20px;
 }
 
 .active-chat-header {
-  height: 64px;
-  background: #f0f2f5;
+  height: 72px;
+  /* 🔴 FIXED: Brand colors (Kedesh) kwenye Header badala ya kijivu cha kawaida */
+  background: linear-gradient(to right, #ffffff, #f8fafc);
   padding: 0 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #d1d7db;
+  border-bottom: 1px solid #e2e8f0;
+  z-index: 10;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
 }
 
 .active-profile {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .active-profile .avatar {
-  width: 40px;
-  height: 40px;
-  background: #94a3b8;
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #4f46e5, #3b82f6);
   border-radius: 50%;
   color: white;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
 }
 
 .profile-details h4 {
-  color: #111b21;
-  font-size: 1rem;
+  color: #0f172a;
+  font-size: 1.1rem;
   margin-bottom: 2px;
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .profile-details p {
-  color: #667781;
-  font-size: 0.8rem;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .chat-messages-area {
   flex: 1;
-  padding: 24px 8%;
+  padding: 24px 5%;
   overflow-y: auto;
-  background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
-  background-size: contain;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.15);
-  border-radius: 10px;
+  gap: 6px;
 }
 
 .encryption-notice {
-  background: #ffeecd;
-  color: #54656f;
+  background: #fef9c3;
+  color: #b45309;
   font-size: 0.8rem;
   text-align: center;
   padding: 8px 16px;
-  border-radius: 10px;
+  border-radius: 12px;
   align-self: center;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  margin-bottom: 24px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  border: 1px solid #fde68a;
+  font-weight: 600;
 }
 
 .date-divider {
   text-align: center;
-  margin: 16px 0;
+  margin: 20px 0;
 }
 
 .date-divider span {
-  background: #ffffff;
-  color: #54656f;
+  background: white;
+  color: #475569;
   font-size: 0.8rem;
-  padding: 6px 14px;
-  border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  font-weight: 700;
+  border: 1px solid #f1f5f9;
 }
 
 .message-row {
   display: flex;
   width: 100%;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
-.msg-out {
-  justify-content: flex-end;
-}
+.msg-out { justify-content: flex-end; }
+.msg-in { justify-content: flex-start; }
 
-.msg-in {
-  justify-content: flex-start;
-}
-
+/* 🔴 FIXED: Vibox vyenye contrast, kivuli, na mipaka dhahiri */
 .message-bubble {
-  max-width: 65%;
-  padding: 6px;
-  border-radius: 12px;
+  max-width: 70%;
+  padding: 8px 10px;
+  border-radius: 16px;
   position: relative;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08); /* Kivuli kimeongezwa */
 }
 
 .bubble-out {
-  background: #d9fdd3;
-  border-top-right-radius: 0;
+  background: #dcfce7; /* Kijani kibichi safi cha OUTBOUND */
+  border-top-right-radius: 4px;
+  border: 1px solid #bbf7d0; /* Mpaka kudhibiti muonekano juani */
 }
 
 .bubble-in {
-  background: #ffffff;
-  border-top-left-radius: 0;
+  background: #ffffff; /* Nyeupe safi ya INBOUND */
+  border-top-left-radius: 4px;
+  border: 1px solid #e2e8f0;
 }
 
-/* ==========================================
-   CSS MPYA: STYLES ZA MEDIA (PICHA, VIDEO, SAUTI)
-   ========================================== */
 .msg-content-wrapper {
   position: relative;
 }
 
-/* Image & Video Containers */
 .media-container {
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  background: rgba(0,0,0,0.03);
+  background: rgba(0,0,0,0.05);
   display: flex;
   justify-content: center;
   align-items: center;
-  max-width: 320px; /* Limits max size to look like real WhatsApp */
-  margin-bottom: 18px; /* Space for timestamps */
+  max-width: 320px;
+  margin-bottom: 20px;
 }
 
 .chat-image {
@@ -2910,24 +2910,21 @@ onUnmounted(() => {
   max-height: 350px;
   object-fit: cover;
   display: block;
-  cursor: pointer;
-  transition: transform 0.2s ease;
 }
 
 .chat-video {
   width: 100%;
   max-height: 350px;
-  border-radius: 8px;
+  border-radius: 12px;
   background: black;
 }
 
-/* Audio Player */
 .audio-container {
   background: transparent;
   padding: 4px;
   max-width: 300px;
   min-width: 250px;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
 .chat-audio {
@@ -2936,155 +2933,167 @@ onUnmounted(() => {
   outline: none;
 }
 
-/* Document Link */
 .document-link {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: rgba(0,0,0,0.04);
-  border-radius: 8px;
+  background: rgba(0,0,0,0.03);
+  border-radius: 10px;
   color: #0f172a;
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.95rem;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   border: 1px solid rgba(0,0,0,0.05);
-  transition: 0.2s;
 }
 
 .document-link:hover {
-  background: rgba(0,0,0,0.08);
+  background: rgba(0,0,0,0.06);
 }
 
-.doc-icon {
-  font-size: 1.5rem;
-}
-
-/* Text formatting inside bubble */
+/* 🔴 FIXED: Maandishi Makali (Darker & Bolder) ndani ya Chat */
 .msg-text {
   font-size: 0.95rem;
-  color: #111b21;
-  line-height: 1.5;
-  padding: 4px 8px 18px 8px;
+  color: #0f172a; /* Nyeusi tii kwa readability */
+  line-height: 1.6;
+  padding: 4px 8px 18px 4px;
   word-wrap: break-word;
+  font-weight: 500;
 }
 
 .msg-meta {
   position: absolute;
-  bottom: 6px;
-  right: 10px;
+  bottom: 4px;
+  right: 8px;
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255,255,255,0.7); /* Slightly transparent background for readability over images */
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(4px); /* Modern blur effect juu ya picha */
   padding: 2px 6px;
   border-radius: 10px;
 }
 
 .msg-time {
   font-size: 0.65rem;
-  color: #667781;
-  font-weight: 600;
-}
-
-.msg-ticks {
-  display: flex;
-  align-items: center;
+  color: #475569;
+  font-weight: 700;
 }
 
 .chat-input-area {
-  background: #f0f2f5;
-  padding: 12px 20px;
+  background: white;
+  padding: 16px 24px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  border-top: 1px solid #d1d7db;
+  gap: 16px;
+  border-top: 1px solid #e2e8f0;
+  z-index: 10;
 }
 
 .chat-input-area input {
   flex: 1;
-  padding: 12px 20px;
-  border-radius: 24px;
-  border: none;
+  padding: 16px 24px;
+  border-radius: 30px;
+  border: 1px solid #cbd5e1;
   outline: none;
-  font-size: 0.95rem;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  font-size: 1rem;
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.chat-input-area input:focus {
+  border-color: #4f46e5;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
 }
 
 .chat-input-area input:disabled {
   background: #e2e8f0;
   cursor: not-allowed;
+  border-color: #e2e8f0;
 }
 
 .send-btn {
-  background: #00a884;
-  width: 44px;
-  height: 44px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   border: none;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  transition: 0.2s;
+  transition: all 0.3s ease;
   flex-shrink: 0;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
 
 .send-btn:hover:not(:disabled) {
-  background: #019071;
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
 }
 
 .send-btn:disabled {
   background: #94a3b8;
   cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
-/* Empty Chat State */
 .chat-main.empty-state {
-  background: #f0f2f5;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .empty-chat-content {
-  text-align: center;
+  background: white;
   padding: 40px;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  border: 1px solid #e2e8f0;
+  text-align: center;
+  max-width: 400px;
 }
 
 .empty-chat-icon {
   font-size: 5rem;
   margin-bottom: 20px;
+  animation: float 3s ease-in-out infinite;
 }
 
 .empty-chat-content h2 {
-  color: #41525d;
-  font-weight: 300;
+  color: #0f172a;
+  font-weight: 800;
   margin-bottom: 12px;
+  font-size: 1.6rem;
 }
 
 .empty-chat-content p {
-  color: #667781;
-  font-size: 0.95rem;
+  color: #64748b;
+  font-size: 1rem;
   margin-bottom: 24px;
+  font-weight: 500;
 }
 
 .empty-chat-features {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   justify-content: center;
   flex-wrap: wrap;
 }
 
 .empty-chat-features span {
-  background: white;
+  background: #f8fafc;
   padding: 8px 16px;
   border-radius: 20px;
-  font-size: 0.8rem;
-  color: #54656f;
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  font-size: 0.85rem;
+  color: #475569;
+  font-weight: 700;
+  border: 1px solid #e2e8f0;
 }
 
 /* ======== SETTINGS ======== */
@@ -3310,7 +3319,6 @@ onUnmounted(() => {
   transform: scale(1.02) translateY(-10px);
 }
 
-/* ======== LOADER ======== */
 .loader-small {
   display: inline-block;
   border: 3px solid rgba(255,255,255,0.3);
@@ -3321,14 +3329,21 @@ onUnmounted(() => {
   animation: spin 1s linear infinite;
 }
 
-/* ======== RESPONSIVE ======== */
+/* 🔴 FIXED: 100% RESPONSIVE CSS (MOBILE, TABLET, DESKTOP) */
 .back-btn-mobile {
   display: none;
-  background: none;
+  background: rgba(0,0,0,0.05);
+  color: #0f172a;
   border: none;
-  font-size: 1.3rem;
-  margin-right: 10px;
+  font-size: 1.2rem;
+  margin-right: 12px;
   cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
 }
 
 @media (max-width: 992px) {
@@ -3384,6 +3399,7 @@ onUnmounted(() => {
   .topbar-right {
     flex-wrap: wrap;
     width: 100%;
+    justify-content: center;
   }
 
   .content-area {
@@ -3398,9 +3414,10 @@ onUnmounted(() => {
     display: none;
   }
 
+  /* Chat Responsiveness */
   .chat-layout {
     flex-direction: column;
-    height: 80vh;
+    height: 85vh; /* Inaruhusu kioo kujaa vizuri kwenye simu */
   }
 
   .chat-sidebar.hide-on-mobile {
@@ -3428,11 +3445,11 @@ onUnmounted(() => {
   }
 
   .back-btn-mobile {
-    display: block;
+    display: flex; /* Inaonekana kwenye simu pekee */
   }
 
   .message-bubble {
-    max-width: 85%;
+    max-width: 85%; /* Inachukua nafasi kubwa zaidi kwenye simu */
   }
 
   .banner-stats {
@@ -3467,6 +3484,15 @@ onUnmounted(() => {
 
   .modal-card {
     margin: 16px;
+  }
+
+  .chat-input-area {
+    padding: 12px 16px;
+    gap: 10px;
+  }
+
+  .chat-messages-area {
+    padding: 16px 3%;
   }
 }
 </style>
