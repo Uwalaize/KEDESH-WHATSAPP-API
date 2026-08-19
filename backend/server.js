@@ -26,7 +26,7 @@ app.use(helmet({
 
 const allowedOrigins = [
     'https://admin.kedeshlimited.com', 
-    'https://homebulksms.kedeshlimited.com', // 🔴 FIXED: Updated domain name
+    'https://bulksms.kedeshlimited.com', // 🔴 FIXED: Updated domain name
     'http://localhost:5173',
     'https://apibulksms.kedeshlimited.com' 
 ];
