@@ -61,7 +61,7 @@
       <div class="sidebar-inner">
         <div class="brand">
           <div class="brand-logo-wrapper">
-            <img src="/image.png" alt="Kedesh Limited" class="brand-logo" />
+            <img src="/logo/image.png" alt="Kedesh Limited" class="brand-logo" />
           </div>
           <div class="brand-text">
             <h2>{{ userData?.businessName || 'KEDESH LIMITED' }}</h2>
